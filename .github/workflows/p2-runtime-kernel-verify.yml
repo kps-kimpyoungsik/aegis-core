@@ -29,10 +29,12 @@ jobs:
       - name: Verify Runtime Kernel
         working-directory: runtime-kernel
         run: bash verify.sh
-      - name: Upload runtime kernel jar
+      - name: Upload runtime kernel package and evidence
         uses: actions/upload-artifact@v4
         with:
           name: aegis-runtime-kernel
-          path: runtime-kernel/build/dist/aegis-runtime-kernel-0.3.0.jar
+          path: |
+            runtime-kernel/build/dist/aegis-runtime-kernel-0.4.0.jar
+            runtime-kernel/build/evidence/**
           if-no-files-found: error
           retention-days: 30
