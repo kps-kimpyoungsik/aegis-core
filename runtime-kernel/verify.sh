@@ -9,11 +9,13 @@ DIST="$BUILD/dist"
 rm -rf "$BUILD"
 mkdir -p "$CLASSES" "$DIST"
 
-MAIN="$ROOT/src/main/java/aegis/runtime/kernel/RuntimeValidationKernel.java"
-TEST="$ROOT/src/test/java/aegis/runtime/kernel/RuntimeValidationKernelTest.java"
+mapfile -t SOURCES < <(find "$ROOT/src/main/java" "$ROOT/src/test/java" -name '*.java' -print | sort)
 
-javac -Xlint:all -Werror -d "$CLASSES" "$MAIN" "$TEST"
+javac --release 21 -Xlint:all -Werror -d "$CLASSES" "${SOURCES[@]}"
 java -cp "$CLASSES" aegis.runtime.kernel.RuntimeValidationKernelTest
-jar --create --file "$DIST/aegis-runtime-kernel-validation-idempotency-0.1.0.jar" -C "$CLASSES" .
-jdeps "$DIST/aegis-runtime-kernel-validation-idempotency-0.1.0.jar"
-sha256sum "$DIST/aegis-runtime-kernel-validation-idempotency-0.1.0.jar"
+java -cp "$CLASSES" aegis.runtime.kernel.RuntimeTraceAuditKernelTest
+
+JAR="$DIST/aegis-runtime-kernel-0.2.0.jar"
+jar --create --file "$JAR" -C "$CLASSES" .
+jdeps "$JAR"
+sha256sum "$JAR"

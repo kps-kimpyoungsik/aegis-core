@@ -8,10 +8,13 @@ on:
       - ".github/workflows/p2-runtime-kernel-verify.yml"
   push:
     branches:
-      - "workstream/p2-runtime-kernel-05-06"
+      - "workstream/p2-runtime-kernel-*"
     paths:
       - "runtime-kernel/**"
       - ".github/workflows/p2-runtime-kernel-verify.yml"
+
+permissions:
+  contents: read
 
 jobs:
   verify:
@@ -19,16 +22,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
-      - name: Verify P2-05 and P2-06
+      - name: Verify Runtime Kernel
         working-directory: runtime-kernel
         run: bash verify.sh
       - name: Upload runtime kernel jar
         uses: actions/upload-artifact@v4
         with:
-          name: aegis-runtime-kernel-validation-idempotency
-          path: runtime-kernel/build/dist/aegis-runtime-kernel-validation-idempotency-0.1.0.jar
+          name: aegis-runtime-kernel
+          path: runtime-kernel/build/dist/aegis-runtime-kernel-0.2.0.jar
           if-no-files-found: error
+          retention-days: 30
