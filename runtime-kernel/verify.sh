@@ -14,8 +14,9 @@ mapfile -t SOURCES < <(find "$ROOT/src/main/java" "$ROOT/src/test/java" -name '*
 javac --release 21 -Xlint:all -Werror -d "$CLASSES" "${SOURCES[@]}"
 java -cp "$CLASSES" aegis.runtime.kernel.RuntimeValidationKernelTest
 java -cp "$CLASSES" aegis.runtime.kernel.RuntimeTraceAuditKernelTest
+java -cp "$CLASSES" aegis.runtime.kernel.RuntimeRollbackKernelTest
 
-JAR="$DIST/aegis-runtime-kernel-0.2.0.jar"
+JAR="$DIST/aegis-runtime-kernel-0.3.0.jar"
 jar --create --file "$JAR" -C "$CLASSES" .
 jdeps "$JAR"
 sha256sum "$JAR"
