@@ -81,7 +81,7 @@ public final class RuntimeRollbackKernelTest {
         checkThrows(() -> new RuntimeRollbackKernel.RollbackPointRef(
                 "rp", "exec-1", 1, -1, "e", "c"), "negative version rejected");
 
-        System.out.println("PASS " + passed + "/15");
+        System.out.println("PASS " + passed + "/17");
     }
 
     private static boolean blocked(RuntimeRollbackKernel.RollbackRequest request, String reason) {
