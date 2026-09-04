@@ -3,28 +3,36 @@
   "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
   "canonical_owner": "aegis.work-runtime",
   "verified_physical_gates": {
-    "P2-01_execution_context_state_machine": "VERIFIED_READY_FOR_INTEGRATION",
+    "P2-01_execution_context_state_machine": "VERIFIED_INTEGRATED",
+    "P2-02_dispatcher_tool_event_loop_scheduler": "VERIFIED_READY_FOR_INTEGRATION",
     "P2-05_validation_compare": "VERIFIED_INTEGRATED",
     "P2-06_idempotency_envelope": "VERIFIED_INTEGRATED",
     "P2-07_trace_audit_correlation": "VERIFIED_INTEGRATED",
     "P2-08_rollback_coordination": "VERIFIED_INTEGRATED"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P2-02_dispatcher_tool_event_loop_scheduler": "GAP",
     "P2-03_checkpoint_resume_crash_replay": "GAP",
     "P2-04_budget_deadline_cancellation_backpressure": "GAP"
   },
   "p2_01_evidence": {
     "workflow_run": 33927474207,
     "assertions": "16/16",
-    "regression": ["14/14", "16/16", "17/17"],
-    "evidence_count_guard": "PASS",
     "dependency": "java.base only",
     "jar": "aegis-runtime-kernel-0.5.0.jar",
     "jar_sha256": "f6986bb93a12612dfa2d3c211dfa5632e580a7d04946d5c41fe74a1f0c8c719f",
     "artifact_id": 9957317011
   },
-  "closure_rule": "P2 cannot be commercially closed until P2-02 through P2-04 have canonical physical source, regression evidence, dependency evidence, rollback and provenance in this repository or an accepted canonical reusable package.",
+  "p2_02_evidence": {
+    "workflow_run": 33927605924,
+    "assertions": "17/17",
+    "regression": ["16/16", "14/14", "16/16", "17/17"],
+    "evidence_count_guard": "PASS",
+    "dependency": "java.base only",
+    "jar": "aegis-runtime-kernel-0.6.0.jar",
+    "jar_sha256": "04c135d411ef146694fe9b5c69eeef801e6b1e83f29eea11a639c125d1d2bce0",
+    "artifact_id": 9957361407
+  },
+  "closure_rule": "P2 cannot be commercially closed until P2-03 and P2-04 have canonical physical source, regression evidence, dependency evidence, rollback and provenance in this repository or an accepted canonical reusable package.",
   "failure_signatures": [
     {
       "id": "TEST_EVIDENCE_DECLARED_COUNT_DRIFT",
@@ -38,13 +46,16 @@
     "vendor_sdk_in_core": "NONE_IN_VERIFIED_PACKAGE",
     "execution_isolation": "EXECUTION_ID_AND_EPOCH_GATED",
     "terminal_state_immutability": "ACTIVE",
+    "single_active_tool_invocation": "ACTIVE",
+    "duplicate_command_rejection": "ACTIVE",
+    "result_correlation": "EXECUTION_COMMAND_INVOCATION_EPOCH_GATED",
+    "duplicate_event_handling": "IDEMPOTENT",
+    "scheduler_lease_winner": "EXPLICIT",
     "stale_result_rejection": "ACTIVE",
-    "checkpoint_resume_epoch_advance": "ACTIVE",
     "audit_source_provenance": "EXPLICIT",
     "trace_sensitive_attribute_guard": "ACTIVE",
-    "rollback_authority_gate": "ACTIVE",
-    "uncompensated_irreversible_rollback": "BLOCKED"
+    "rollback_authority_gate": "ACTIVE"
   },
-  "next_pointer": "P2-02 Dispatcher / Tool Invocation / Event Loop / Scheduler physical canonical implementation",
-  "rollback_point": "main@070c171a728948e10264865a439552f91d7ba888"
+  "next_pointer": "P2-03 Checkpoint / Resume / Crash Recovery / Replay Safety physical canonical implementation",
+  "rollback_point": "main@64b566fd12bc229ecb135b146017c65ef17f0b58"
 }
