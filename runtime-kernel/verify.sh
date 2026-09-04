@@ -20,14 +20,12 @@ run_and_verify_count() {
   local output
   output="$(java -cp "$CLASSES" "$class_name")"
   printf '%s\n' "$output" | tee "$EVIDENCE/$evidence_file"
-
   local pass_line
   pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
   if [[ -z "$pass_line" ]]; then
     echo "EVIDENCE_GUARD_FAIL: missing PASS n/n marker for $class_name" >&2
     return 31
   fi
-
   local actual declared
   actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
   declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
@@ -38,13 +36,14 @@ run_and_verify_count() {
 }
 
 run_and_verify_count aegis.runtime.kernel.RuntimeExecutionStateKernelTest execution-state-count.txt
+run_and_verify_count aegis.runtime.kernel.RuntimeDispatchKernelTest dispatch-count.txt
 run_and_verify_count aegis.runtime.kernel.RuntimeValidationKernelTest validation-count.txt
 run_and_verify_count aegis.runtime.kernel.RuntimeTraceAuditKernelTest trace-audit-count.txt
 run_and_verify_count aegis.runtime.kernel.RuntimeRollbackKernelTest rollback-count.txt
 
 echo "TEST_EVIDENCE_COUNT_GUARD=PASS" | tee "$EVIDENCE/evidence-count-guard.txt"
 
-JAR="$DIST/aegis-runtime-kernel-0.5.0.jar"
+JAR="$DIST/aegis-runtime-kernel-0.6.0.jar"
 jar --create --file "$JAR" -C "$CLASSES" .
 jdeps "$JAR" | tee "$EVIDENCE/jdeps.txt"
 sha256sum "$JAR" | tee "$EVIDENCE/sha256.txt"
