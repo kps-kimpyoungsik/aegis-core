@@ -78,7 +78,7 @@ public final class RuntimeTraceAuditKernelTest {
         check(second.canonicalOwner().equals("aegis.work-runtime"), "canonical owner explicit");
         check(second.event().trace().schemaVersion().equals("1.0.0"), "telemetry schema version explicit");
 
-        System.out.println("PASS " + passed + "/15");
+        System.out.println("PASS " + passed + "/16");
     }
 
     private static void check(boolean condition, String name) {
