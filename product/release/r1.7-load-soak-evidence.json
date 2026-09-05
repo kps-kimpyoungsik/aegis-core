@@ -1,0 +1,94 @@
+{
+  "gate": "R1.7_LOAD_SOAK_RELIABILITY",
+  "status": "VERIFIED_READY_FOR_INTEGRATION",
+  "scope": "sustained_concurrent_read_path_reliability",
+  "canonicalOwner": "release-ci-harness",
+  "rollbackPoint": "main@0ed7dbfb7adbbdd7b01b39b9f2176908aba82a59",
+  "candidateHead": "6e590ebfd31aeb1d85a30a4e70366049a8652100",
+  "workflow": {
+    "runId": 33991709800,
+    "jobId": 101374998176,
+    "conclusion": "success",
+    "runner": {
+      "os": "Ubuntu 24.04.4 LTS",
+      "runnerVersion": "2.337.0",
+      "runnerImage": "ubuntu-24.04@20260831.293.1",
+      "node": "v22.23.2",
+      "npm": "10.9.8"
+    }
+  },
+  "candidateImage": {
+    "imageId": "sha256:3b23aacfcd25508ddd8608dae056283b116e1f2de684419cbbb3255cc5b408b1",
+    "healthBefore": "PASS",
+    "healthAfter": "PASS",
+    "dockerHealthAfter": {
+      "status": "healthy",
+      "failingStreak": 0
+    }
+  },
+  "load": {
+    "configuredDurationMs": 30000,
+    "measuredWallMs": 30003.244,
+    "concurrency": 32,
+    "totalRequests": 158651,
+    "status200": 158651,
+    "failures": 0,
+    "transportErrors": 0,
+    "successRatePercent": 100,
+    "requestsPerSecondObserved": 5287.795,
+    "latencyMsObserved": {
+      "p50": 5.291,
+      "p95": 10.045,
+      "p99": 13.722,
+      "max": 62.377
+    }
+  },
+  "postLoadResourcesObserved": {
+    "cpuPercent": "0.02%",
+    "memoryUsage": "31.32MiB / 15.61GiB",
+    "memoryPercent": "0.20%",
+    "pids": 7,
+    "networkIO": "43.7MB / 42.4MB"
+  },
+  "acceptance": {
+    "minimumRequests": 1000,
+    "zeroHttpOrTransportFailures": true,
+    "preAndPostReadiness": true,
+    "fatalRuntimeSignatureAbsent": true,
+    "latencySloQualification": "NOT_CLAIMED",
+    "productionCapacityQualification": "NOT_CLAIMED"
+  },
+  "failureHistory": [
+    {
+      "signature": "LOAD_EVIDENCE_UNBOUNDED_SPREAD",
+      "runId": 33991607210,
+      "artifactId": 9976808947,
+      "artifactSha256": "d88a04e545c8063307fdb32bc21fb38fc8df89d8efa605f858f3d173c1878a16",
+      "mechanism": "Math.max(...latencies) overflowed the Node call stack after the load interval",
+      "classification": "TEST_HARNESS_FAILURE_NOT_SERVICE_FAILURE",
+      "correction": "replace variadic spread with running maximum aggregation"
+    }
+  ],
+  "evidenceArtifact": {
+    "id": 9976841820,
+    "name": "aegis-r1.7-load-soak-evidence",
+    "sha256": "c1191ea44f4c3b6b5b944581a4deb3aa62fd68f514727d8654b92ccfe8b96d05",
+    "sizeBytes": 3005,
+    "expiresAt": "2026-10-05T21:00:55Z"
+  },
+  "failClosedBoundaries": {
+    "productionLatencySlo": "NOT_CLAIMED",
+    "cloudScaleSoak": "NOT_EXECUTED",
+    "productionCapacityPlan": "NOT_EXECUTED",
+    "productionKmsCustody": "BLOCKED_BY_ENVIRONMENT",
+    "productionRegistrySigning": "BLOCKED_BY_ENVIRONMENT",
+    "productionGa": "BLOCKED"
+  },
+  "provenance": {
+    "before": "R1.7 load/soak physical evidence absent",
+    "change": "add bounded CI sustained-load reliability gate against canonical container read paths",
+    "after": "158651/158651 HTTP 200 responses over 30 seconds at concurrency 32 with post-load health preserved",
+    "compare": "candidate improves release reliability evidence without changing application/runtime ownership",
+    "rollback": "remove R1.7 workflow/evidence and return to main@0ed7dbfb7adbbdd7b01b39b9f2176908aba82a59"
+  }
+}
