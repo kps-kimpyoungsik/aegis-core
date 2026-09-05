@@ -1,0 +1,32 @@
+name: session-baseline-integration-verify
+on:
+  pull_request:
+    paths:
+      - 'integration-gate/**'
+      - 'release-candidate/rc6/**'
+      - 'runtime-kernel/**'
+      - 'portable-brain/**'
+      - 'data-plane/**'
+      - 'session-import/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify existing Runtime Kernel
+        run: bash runtime-kernel/verify.sh
+      - name: Verify existing Portable Brain
+        run: bash portable-brain/verify.sh
+      - name: Verify existing Data Plane
+        run: bash data-plane/verify.sh
+      - name: Verify RC6 semantic integration gate
+        run: bash integration-gate/verify.sh
