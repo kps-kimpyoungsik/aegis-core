@@ -89,7 +89,7 @@ public final class DatasetRegistryKernelTest {
                 "", "logical", DatasetKind.RECORD, ownership, "1", true, "prov"),
                 "blank dataset id blocked");
 
-        System.out.println("PASS " + assertions + "/22");
+        System.out.println("PASS " + assertions + "/23");
     }
 
     private static DatasetDefinition dataset(
