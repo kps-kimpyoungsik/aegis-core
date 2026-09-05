@@ -1,0 +1,39 @@
+name: R0.9 Recovery Migration Integration
+
+on:
+  pull_request:
+    paths:
+      - 'integration-gate/**'
+      - 'runtime-kernel/**'
+      - 'data-plane/**'
+      - 'storage-adapters/**'
+      - '.github/workflows/r0.9-recovery-migration-integration.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'integration-gate/**'
+      - 'runtime-kernel/**'
+      - 'data-plane/**'
+      - 'storage-adapters/**'
+      - '.github/workflows/r0.9-recovery-migration-integration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-recovery:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify Runtime Kernel regression
+        run: bash runtime-kernel/verify.sh
+      - name: Verify Data Plane regression
+        run: bash data-plane/verify.sh
+      - name: Verify live storage adapter regression
+        run: bash storage-adapters/verify.sh
+      - name: Verify recovery and migration integration
+        run: bash integration-gate/verify.sh
