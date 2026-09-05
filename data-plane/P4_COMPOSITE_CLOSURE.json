@@ -5,11 +5,12 @@
   "verified_physical_gates": {
     "P4-01_dataset_registry": "VERIFIED_INTEGRATED",
     "P4-02_record_event_projection_consistency": "VERIFIED_INTEGRATED",
-    "P4-03_migration_retention_backup_restore": "VERIFIED_INTEGRATED"
+    "P4-03_migration_retention_backup_restore": "VERIFIED_INTEGRATED",
+    "P4-04_live_storage_adapters": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P4-04_live_storage_adapters": "CANDIDATE_SESSION_ALIGNED",
-    "P4-05_composite_closure": "GAP"
+    "P4-05_composite_closure": "GAP",
+    "P4-RECOVERY-LIVE-001": "GAP"
   },
   "p4_03_evidence": {
     "registry_regression": "23/23",
@@ -31,9 +32,34 @@
     "redis_live_contract": [
       "cache TTL",
       "lease acquire/reject/release",
-      "monotonic fencing token"
-    ],
-    "promotion_rule": "actual service-backed CI evidence required"
+      "monotonic fencing token",
+      "stale owner release rejection"
+    ]
+  },
+  "p4_04_live_evidence": {
+    "workflow_run": 33965819322,
+    "workflow_job": 101305647083,
+    "merge_ref": "b155573c1bb215b78a4cfe8d2e09f242a28bfb87",
+    "core_regression": ["23/23", "21/21", "21/21"],
+    "evidence_count_guard": "PASS",
+    "postgres_live": "PASS",
+    "redis_live": "PASS",
+    "postgres_image": "postgres:16-alpine",
+    "postgres_image_digest": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+    "postgres_version": "16.15",
+    "redis_image": "redis:7-alpine",
+    "redis_image_digest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+    "redis_server_version": "7.4.11",
+    "redis_cli_version": "7.0.15",
+    "java": "Temurin 21.0.12+1",
+    "checkout_action": "actions/checkout@v5",
+    "artifact_action": "actions/upload-artifact@v7",
+    "artifact_id": 9969382715,
+    "artifact_sha256": "e45b562e31243d3e40658d2d77a9ae6edb426ea272d7325a12d455ca8e6765e1",
+    "hardening_notes": [
+      "Redis CI service reported vm.overcommit_memory disabled; production deployment must explicitly address this.",
+      "redis:7-alpine is a moving major tag; production deployment must pin immutable image digest/version."
+    ]
   },
   "ownership": {
     "dataset_registry_semantics": "aegis.data-plane",
@@ -55,7 +81,8 @@
     "retention legal hold blocks deletion",
     "restore requires owner, dataset, schema and integrity hash match",
     "P4-04 reuses archived P4.5 Record/Event/Projection/Cache/Lease contracts",
-    "P4-04 cannot claim live PASS without PostgreSQL and Redis service-backed evidence",
+    "P4-04 live promotion requires PostgreSQL and Redis service-backed evidence",
+    "P4 commercial closure still requires P4-RECOVERY-LIVE-001",
     "vendor bindings remain outside data-plane core"
   ],
   "compatibility": {
@@ -63,6 +90,6 @@
     "core_vendor_sdk": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Run P4-04 live service-backed CI, preserve evidence, then P4-05 composite closure",
+  "next_pointer": "Merge P4-04 after final merge-ref CI, then execute P4-RECOVERY-LIVE-001 before P4-05 composite closure",
   "rollback_point": "main@c015ce2ab9a69a268a73c83d95a3e34da3b82e4f"
 }
