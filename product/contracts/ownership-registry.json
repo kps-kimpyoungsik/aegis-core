@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.8.0",
   "responsibilities": [
     {"id":"canonical-contracts","owner":"@aegis/contracts","scope":"canonical schemas and protocol contracts"},
     {"id":"core-domain","owner":"@aegis/core-domain","scope":"canonical domain objects and invariants"},
@@ -20,6 +20,7 @@
     {"id":"api-server","owner":"aegis-api-server","scope":"HTTP transport, typed command validation and application dispatch"},
     {"id":"worker","owner":"aegis-worker","scope":"queued application command execution adapter"},
     {"id":"daemon","owner":"aegis-daemon","scope":"worker lifecycle tick and health projection"},
-    {"id":"release-convergence","owner":"@aegis/release-convergence","scope":"GA evidence gates, canary promotion and public-open approval only"}
+    {"id":"release-convergence","owner":"@aegis/release-convergence","scope":"GA evidence gates, canary promotion and public-open approval only"},
+    {"id":"staging-deployment","owner":"product/deployment","scope":"staging rollout mechanics, health verification and rollback drill execution only"}
   ]
 }
