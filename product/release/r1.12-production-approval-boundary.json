@@ -1,0 +1,38 @@
+{
+  "releaseId": "aegis-r1.12-production-approval-boundary-v2",
+  "gate": "G8_PRODUCTION_APPROVAL",
+  "baseline": "main@688d97d49a067d710c99c59253e601bf139a3c63",
+  "boundaryValidation": "CANDIDATE",
+  "approvalStatus": "NOT_EXECUTED",
+  "decision": "PRODUCTION_NOT_APPROVED",
+  "protectedSurface": true,
+  "canonicalOwner": "@aegis/release-convergence",
+  "approvalGeneration": "EXTERNAL_ONLY",
+  "independentVerifier": "CONSUMED_NOT_OWNED",
+  "requiredEnvelope": [
+    "status=APPROVED",
+    "approverIdentity",
+    "authorityRef",
+    "approvedRevision",
+    "approvedDigest",
+    "rollbackReady=true",
+    "issuedAt",
+    "expiresAt",
+    "independentVerifier=PASS"
+  ],
+  "invariants": [
+    "release-convergence never generates production approval",
+    "approval binds the exact source revision and artifact digest",
+    "approval validity window must be ordered and current",
+    "approval cannot be reused for another release candidate",
+    "independent verifier failure keeps production fail-closed",
+    "rollback readiness is mandatory"
+  ],
+  "notExecuted": [
+    "human production approval",
+    "production public-open approval",
+    "production registry artifact binding",
+    "production permission root decision"
+  ],
+  "rollbackPoint": "main@688d97d49a067d710c99c59253e601bf139a3c63"
+}
