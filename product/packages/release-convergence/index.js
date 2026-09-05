@@ -126,3 +126,5 @@ export function evaluatePublicOpen(evidence = {}) {
     decision: missing.length === 0 ? "PUBLIC_OPEN_APPROVED" : "PUBLIC_OPEN_BLOCKED",
   });
 }
+
+export { evaluateProductionApprovalEnvelope } from "./production-approval.js";
