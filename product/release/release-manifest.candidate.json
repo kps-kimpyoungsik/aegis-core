@@ -36,7 +36,7 @@
     "workspaceBootstrap": "PASS",
     "realE2E": "PASS",
     "e2eFailurePath": "PASS",
-    "recoveryMigrationIntegration": "PASS_ON_MAIN"
+    "recoveryMigrationIntegration": "PASS"
   },
   "rollbackPoint": "main@8146dec85ee18de978e9dc5660584354296e2175"
 }
