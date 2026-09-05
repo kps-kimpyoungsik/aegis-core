@@ -1,0 +1,107 @@
+name: P4 Live Storage Integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "data-plane/**"
+      - ".github/workflows/p4-live-storage-integration.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  p4-live-storage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegis
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis-ci
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 56379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install PostgreSQL and Redis clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client redis-tools
+
+      - name: Verify P4 core regressions
+        run: bash data-plane/verify.sh
+
+      - name: Initialize PostgreSQL schema
+        env:
+          PGPASSWORD: aegis-ci
+        run: |
+          psql -h 127.0.0.1 -p 54329 -U aegis -d aegis -v ON_ERROR_STOP=1 \
+            -f data-plane/live-integration/sql/001_init.sql
+
+      - name: PostgreSQL live storage contract
+        env:
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_URL: postgresql://aegis:aegis-ci@127.0.0.1:54329/aegis
+        run: bash data-plane/live-integration/scripts/test-postgres-live.sh
+
+      - name: Redis cache lease fencing contract
+        env:
+          AEGIS_REDIS_HOST: 127.0.0.1
+          AEGIS_REDIS_PORT: "56379"
+        run: bash data-plane/live-integration/scripts/test-redis-live.sh
+
+      - name: Capture live integration evidence
+        run: |
+          mkdir -p data-plane/build/live-evidence
+          {
+            echo "P4_04_LIVE_STORAGE=PASS"
+            echo "commit=${GITHUB_SHA}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "runner_arch=${RUNNER_ARCH}"
+            echo "postgres_image=postgres:16-alpine"
+            echo "redis_image=redis:7-alpine"
+            echo "java=$(java -version 2>&1 | head -n 1)"
+            echo "psql=$(psql --version)"
+            echo "redis_cli=$(redis-cli --version)"
+          } | tee data-plane/build/live-evidence/environment.txt
+          pg_isready -h 127.0.0.1 -p 54329 -U aegis | tee data-plane/build/live-evidence/postgres-health.txt
+          redis-cli -h 127.0.0.1 -p 56379 ping | tee data-plane/build/live-evidence/redis-health.txt
+          sha256sum data-plane/live-integration/sql/001_init.sql \
+            data-plane/live-integration/scripts/test-postgres-live.sh \
+            data-plane/live-integration/scripts/test-redis-live.sh \
+            > data-plane/build/live-evidence/source-sha256.txt
+
+      - name: Upload live integration evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: p4-live-storage-evidence
+          path: data-plane/build/live-evidence/**
+          if-no-files-found: error
+          retention-days: 30
