@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createApiServer } from "../apps/api-server/index.js";
+import { createApiServer, createStaticBearerAuthorizer } from "../apps/api-server/index.js";
 
 async function withServer(options, fn) {
   const server = createApiServer(options);
@@ -77,5 +77,52 @@ test("internal execution errors do not expose exception details", async () => {
     const body = await response.json();
     assert.deepEqual(body, { code:"AEGIS-API-500 INTERNAL_ERROR" });
     assert.equal(JSON.stringify(body).includes("do-not-leak"), false);
+  });
+});
+
+test("protected API fails closed when authentication is not configured", async () => {
+  let calls=0;
+  await withServer({ executeTask: async()=>{calls+=1;return{};}, authorizeRequest:createStaticBearerAuthorizer(undefined) }, async (base) => {
+    const health = await fetch(`${base}/health/ready`);
+    assert.equal(health.status, 200);
+    const response = await fetch(`${base}/v1/tasks`, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({goal:"must not execute",owner:"ops",responsibility:"application-runtime"}) });
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { code:"AEGIS-API-SEC-001 AUTH_NOT_CONFIGURED" });
+    assert.equal(calls, 0);
+  });
+});
+
+test("invalid bearer token is rejected before body parsing and execution", async () => {
+  let calls=0;
+  const expectedToken="r1.11-test-token-0123456789";
+  await withServer({ executeTask: async()=>{calls+=1;return{};}, authorizeRequest:createStaticBearerAuthorizer(expectedToken) }, async (base) => {
+    const response = await fetch(`${base}/v1/tasks`, { method:"POST", headers:{"authorization":"Bearer wrong-token-0123456789","content-type":"text/plain"}, body:"not-json" });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { code:"AEGIS-API-SEC-003 INVALID_TOKEN" });
+    assert.equal(calls, 0);
+  });
+});
+
+test("valid bearer token permits protected task and snapshot routes", async () => {
+  const expectedToken="r1.11-test-token-0123456789";
+  let calls=0;
+  const authorizeRequest=createStaticBearerAuthorizer(expectedToken);
+  await withServer({
+    executeTask: async()=>{calls+=1;return{status:"COMPLETED"};},
+    getSnapshot:()=>({tasks:[{id:"secure-task"}],events:[]}),
+    authorizeRequest,
+  }, async (base) => {
+    const headers={"authorization":`Bearer ${expectedToken}`};
+    const snapshot = await fetch(`${base}/v1/runtime/snapshot`, { headers });
+    assert.equal(snapshot.status, 200);
+    assert.equal((await snapshot.json()).tasks[0].id, "secure-task");
+
+    const task = await fetch(`${base}/v1/tasks`, {
+      method:"POST",
+      headers:{...headers,"content-type":"application/json"},
+      body:JSON.stringify({goal:"authorized",owner:"ops",responsibility:"application-runtime"}),
+    });
+    assert.equal(task.status, 202);
+    assert.equal(calls, 1);
   });
 });
