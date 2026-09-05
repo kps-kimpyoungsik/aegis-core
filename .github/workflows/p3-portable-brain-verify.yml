@@ -29,12 +29,23 @@ jobs:
       - name: Verify Portable Brain
         working-directory: portable-brain
         run: bash verify.sh
+      - name: Verify release package exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          jars=(portable-brain/build/dist/aegis-portable-brain-*.jar)
+          if [[ ${#jars[@]} -ne 1 ]]; then
+            echo "RELEASE_PACKAGE_GUARD_FAIL expected=1 actual=${#jars[@]}" >&2
+            exit 41
+          fi
+          echo "RELEASE_PACKAGE_GUARD=PASS jar=${jars[0]}"
       - name: Upload portable brain package and evidence
         uses: actions/upload-artifact@v4
         with:
           name: aegis-portable-brain
           path: |
-            portable-brain/build/dist/aegis-portable-brain-0.1.0.jar
+            portable-brain/build/dist/aegis-portable-brain-*.jar
             portable-brain/build/evidence/**
           if-no-files-found: error
           retention-days: 30
