@@ -1,0 +1,51 @@
+{
+  "schema": "aegis.release.production-qualification.v1",
+  "releaseId": "aegis-r1.8-production-qualification-evidence",
+  "sourceRevision": "main@17742e8e409b5734625d2b187c799b6d0613b0b4",
+  "canonicalOwner": "@aegis/release-convergence",
+  "gaGates": {
+    "G0_SOURCE_ARCHITECTURE": "PASS",
+    "G1_CLEAN_BUILD": "PASS",
+    "G2_ARTIFACT_SUPPLY_CHAIN": "PASS",
+    "G3_SECURITY": "NOT_EXECUTED",
+    "G4_DATA_SAFETY": "PARTIAL",
+    "G5_STAGING": "PARTIAL",
+    "G6_RELIABILITY_PERFORMANCE": "NOT_EXECUTED",
+    "G7_ROLLBACK": "PARTIAL",
+    "G8_PRODUCTION_APPROVAL": "NOT_EXECUTED"
+  },
+  "evidence": {
+    "sourceArchitecture": ["product deterministic ownership/contracts/architecture/package-boundary gates"],
+    "cleanBuild": ["R1.7 canonical package-lock", "npm ci", "lint", "release typecheck", "React production build"],
+    "artifactSupplyChain": ["R1.3 CycloneDX SBOM", "Trivy HIGH/CRITICAL gate", "R1.5 signed provenance/SBOM attestations", "R1.6 OCI digest signature and wrong-key rejection"],
+    "dataSafety": ["R1.0 live PostgreSQL E2E", "R1.1 process interruption recovery", "backup/restore qualification NOT_EXECUTED"],
+    "staging": ["R1.4 local production-like staging rollout/rollback", "cloud/Kubernetes traffic cutover NOT_EXECUTED"],
+    "rollback": ["R1.4 immutable container rollback PASS", "production deployment rollback NOT_EXECUTED"],
+    "security": ["supply-chain scanning PASS", "penetration/security qualification NOT_EXECUTED"],
+    "reliabilityPerformance": ["load/soak/performance qualification NOT_EXECUTED"],
+    "productionApproval": ["human production approval NOT_EXECUTED"]
+  },
+  "publicOpenEvidence": {
+    "gaGatePassed": false,
+    "customerTermsReady": false,
+    "privacyNoticeReady": false,
+    "supportRunbookReady": false,
+    "incidentResponseReady": false,
+    "statusPageReady": false,
+    "monitoringAlertingReady": false,
+    "backupRestoreEvidence": false,
+    "rollbackEvidence": true,
+    "securityEvidence": false
+  },
+  "environmentBoundaries": {
+    "production_kms_custody": "BLOCKED_BY_ENVIRONMENT",
+    "production_registry_signing": "BLOCKED_BY_ENVIRONMENT",
+    "cloud_kubernetes_traffic_cutover": "BLOCKED_BY_ENVIRONMENT",
+    "production_backup_restore": "NOT_EXECUTED",
+    "load_soak": "NOT_EXECUTED",
+    "penetration_security": "NOT_EXECUTED"
+  },
+  "expectedDecision": "NOT_PROMOTED",
+  "expectedPublicOpenDecision": "PUBLIC_OPEN_BLOCKED",
+  "rollbackPoint": "main@17742e8e409b5734625d2b187c799b6d0613b0b4"
+}
