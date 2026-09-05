@@ -1,0 +1,41 @@
+{
+  "phase": "P4 Storage / Data Plane",
+  "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
+  "canonical_owner": "aegis.data-plane",
+  "verified_physical_gates": {},
+  "recorded_but_not_physically_verified_in_canonical_repo": {
+    "P4-01_dataset_registry": "CANDIDATE",
+    "P4-02_record_event_projection_consistency": "GAP",
+    "P4-03_migration_retention_backup_restore": "GAP",
+    "P4-04_live_storage_adapters": "GAP",
+    "P4-05_composite_closure": "GAP"
+  },
+  "ownership": {
+    "dataset_registry_semantics": "aegis.data-plane",
+    "dataset_semantic_owner": "declared_per_dataset",
+    "write_port": "declared_per_dataset",
+    "source_of_truth": "single_per_logical_dataset",
+    "transaction_boundary": "declared_per_dataset",
+    "event_boundary": "declared_per_dataset",
+    "side_effect_owner": "declared_per_dataset",
+    "recovery_owner": "declared_per_dataset",
+    "retention_owner": "declared_per_dataset",
+    "migration_owner": "declared_per_dataset"
+  },
+  "invariants": [
+    "one dataset identity has one canonical definition",
+    "one logical dataset cannot have multiple declared sources of truth",
+    "projection and index datasets cannot be declared source of truth",
+    "write authority requires both canonical owner and write port match",
+    "projection linkage requires same logical dataset key and a declared source of truth",
+    "vendor storage SDKs remain outside data-plane core contracts"
+  ],
+  "compatibility": {
+    "java": "21",
+    "vendor_sdk": "NONE",
+    "framework_dependency": "NONE",
+    "hexagonal_boundary": "PRESERVED"
+  },
+  "next_pointer": "Verify and merge P4-01, then P4-02 Record/Event/Projection consistency",
+  "rollback_point": "main@b357b0a0ba68461edcf67e2a13934bbf42c4be42"
+}
