@@ -39,10 +39,11 @@ run_and_verify_count() {
 
 run_and_verify_count aegis.data.registry.DatasetRegistryKernelTest dataset-registry-count.txt
 run_and_verify_count aegis.data.consistency.RecordEventProjectionKernelTest consistency-kernel-count.txt
+run_and_verify_count aegis.data.lifecycle.DataLifecycleKernelTest lifecycle-kernel-count.txt
 
 echo "TEST_EVIDENCE_COUNT_GUARD=PASS" | tee "$EVIDENCE/evidence-count-guard.txt"
 
-JAR="$DIST/aegis-data-plane-0.2.0.jar"
+JAR="$DIST/aegis-data-plane-0.3.0.jar"
 jar --create --file "$JAR" -C "$CLASSES" .
 jdeps "$JAR" | tee "$EVIDENCE/jdeps.txt"
 sha256sum "$JAR" | tee "$EVIDENCE/sha256.txt"
