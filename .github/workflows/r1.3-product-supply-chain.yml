@@ -1,0 +1,114 @@
+name: R1.3 Product Supply Chain Evidence
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.3-product-supply-chain.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  product-supply-chain:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Build immutable candidate artifact
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.3-supply-chain
+          docker build --pull --tag aegis-product:r1.3-candidate ./product
+          docker save aegis-product:r1.3-candidate | gzip -n > build/r1.3-supply-chain/aegis-product-r1.3.tar.gz
+          sha256sum build/r1.3-supply-chain/aegis-product-r1.3.tar.gz \
+            | tee build/r1.3-supply-chain/subject.sha256
+
+      - name: Generate SPDX SBOM
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm sbom --sbom-format spdx > ../build/r1.3-supply-chain/aegis-product-r1.3.spdx.json
+          node -e "const fs=require('fs');const p='../build/r1.3-supply-chain/aegis-product-r1.3.spdx.json';const d=JSON.parse(fs.readFileSync(p,'utf8'));if(!String(d.spdxVersion||'').startsWith('SPDX-')) process.exit(1);"
+
+      - name: Attest build provenance
+        uses: actions/attest@v4.2.1
+        with:
+          subject-path: build/r1.3-supply-chain/aegis-product-r1.3.tar.gz
+
+      - name: Attest SPDX SBOM
+        uses: actions/attest@v4.2.1
+        with:
+          subject-path: build/r1.3-supply-chain/aegis-product-r1.3.tar.gz
+          sbom-path: build/r1.3-supply-chain/aegis-product-r1.3.spdx.json
+
+      - name: Verify provenance and SBOM attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh attestation verify build/r1.3-supply-chain/aegis-product-r1.3.tar.gz \
+            -R "${GITHUB_REPOSITORY}" \
+            --format json > build/r1.3-supply-chain/provenance-verification.json
+          gh attestation verify build/r1.3-supply-chain/aegis-product-r1.3.tar.gz \
+            -R "${GITHUB_REPOSITORY}" \
+            --predicate-type https://spdx.dev/Document/v2.3 \
+            --format json > build/r1.3-supply-chain/sbom-verification.json
+          test -s build/r1.3-supply-chain/provenance-verification.json
+          test -s build/r1.3-supply-chain/sbom-verification.json
+
+      - name: Record release evidence
+        run: |
+          set -euo pipefail
+          {
+            echo 'R1_3_PRODUCT_SUPPLY_CHAIN=PASS'
+            echo "commit=${GITHUB_SHA}"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "runner_arch=${RUNNER_ARCH}"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "docker=$(docker --version)"
+            echo "gh=$(gh --version | head -n 1)"
+          } > build/r1.3-supply-chain/environment.txt
+          sha256sum \
+            product/Dockerfile \
+            product/package.json \
+            .github/workflows/r1.3-product-supply-chain.yml \
+            > build/r1.3-supply-chain/source-sha256.txt
+
+      - name: Upload supply-chain evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.3-supply-chain-evidence
+          path: |
+            build/r1.3-supply-chain/subject.sha256
+            build/r1.3-supply-chain/aegis-product-r1.3.spdx.json
+            build/r1.3-supply-chain/provenance-verification.json
+            build/r1.3-supply-chain/sbom-verification.json
+            build/r1.3-supply-chain/environment.txt
+            build/r1.3-supply-chain/source-sha256.txt
+          if-no-files-found: error
+          retention-days: 30
