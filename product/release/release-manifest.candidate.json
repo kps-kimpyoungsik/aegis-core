@@ -1,9 +1,9 @@
 {
-  "releaseId": "aegis-r0.6-application-runtime",
+  "releaseId": "aegis-r0.7-operational-runtime",
   "status": "CANDIDATE",
   "sourceRevision": "LOCAL_SANDBOX",
   "contracts": "0.1.0",
-  "packageBaseline": "0.6.0",
+  "packageBaseline": "0.7.0",
   "validation": {
     "ownership": "PASS",
     "contracts": "PASS",
@@ -29,7 +29,10 @@
     "memoryPromotion": "PASS",
     "selectiveRetrieval": "PASS",
     "applicationRuntime": "PASS",
-    "applicationLifecycleIntegration": "PASS"
+    "applicationLifecycleIntegration": "PASS",
+    "apiRuntime": "PASS",
+    "workerDaemon": "PASS",
+    "webProjection": "PASS"
   },
-  "rollbackPoint": "aegis-r0.5-portable-brain"
+  "rollbackPoint": "aegis-r0.6-application-runtime"
 }
