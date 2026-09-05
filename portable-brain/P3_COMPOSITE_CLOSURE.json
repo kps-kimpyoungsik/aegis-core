@@ -4,32 +4,36 @@
   "canonical_owner": "aegis.portable-brain",
   "verified_physical_gates": {
     "P3-01_memory_semantic_model": "VERIFIED_INTEGRATED",
-    "P3-02_knowledge_lifecycle": "VERIFIED_READY_FOR_INTEGRATION"
+    "P3-02_knowledge_lifecycle": "VERIFIED_INTEGRATED",
+    "P3-03_skill_asset_registry": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P3-03_skill_asset_registry": "GAP",
     "P3-04_selective_retrieval": "GAP",
     "P3-05_export_import": "GAP",
     "P3-06_composite_closure": "GAP"
   },
   "p3_01_evidence": {
     "assertions": "18/18",
-    "evidence_count_guard": "PASS",
     "status": "VERIFIED_INTEGRATED"
   },
   "p3_02_evidence": {
-    "workflow_run": 33954680147,
-    "workflow_job": 101275716770,
+    "assertions": "22/22",
+    "status": "VERIFIED_INTEGRATED"
+  },
+  "p3_03_evidence": {
+    "workflow_run": 33954811752,
+    "workflow_job": 101276076473,
     "memory_regression": "18/18",
-    "knowledge_assertions": "22/22",
+    "knowledge_regression": "22/22",
+    "skill_asset_assertions": "20/20",
     "evidence_count_guard": "PASS",
     "release_package_guard": "PASS",
     "java": "Temurin 21.0.12+1",
     "dependency": "java.base only",
-    "jar": "aegis-portable-brain-0.2.0.jar",
-    "jar_sha256": "f5ef8ad986691a64b6f2503e8c39d5344885c69b89a8d3bfade56c4a8b06bfd2",
-    "artifact_id": 9965952285,
-    "artifact_zip_sha256": "eadd663e477507028c3d68eeaeafabc21d6282f8b5ea37daa9c0e80aef12a3eb"
+    "jar": "aegis-portable-brain-0.3.0.jar",
+    "jar_sha256": "76829d456ecd28fb2e455723fdbf049d33b66ca278419adf10613cc39d7aefe8",
+    "artifact_id": 9965993902,
+    "artifact_zip_sha256": "ca6c7d23d8a51e8137447b0d5cc3bda5ad766df887002c1e77fb1947083fdb16"
   },
   "ownership": {
     "memory_semantics": "aegis.portable-brain",
@@ -40,13 +44,12 @@
     "promotion_authority": "aegis.governance.freeze"
   },
   "invariants": [
-    "retracted memory is never retrieved",
-    "retracted memory cannot resurrect by ordinary state transition",
-    "working memory is not directly promotable",
-    "retracted knowledge is never actively retrieved",
-    "retracted knowledge cannot resurrect through ordinary transition or supersede",
-    "knowledge retrieval is scope isolated, freshness aware and explicitly bounded",
-    "knowledge promotion requires source version, provenance, confidence and applicability",
+    "retracted memory and knowledge are excluded from active retrieval",
+    "retracted memory, knowledge and assets cannot resurrect through ordinary lifecycle transition",
+    "skill routing uses manifest triggers and exclusions before loading full detail",
+    "skill selection is explicitly bounded and prefers quality with lower context cost as tie-breaker",
+    "asset promotion candidate requires validated status, provenance and quality history",
+    "portable brain does not own promotion authority",
     "vendor persistence semantics remain outside portable brain"
   ],
   "compatibility": {
@@ -55,6 +58,6 @@
     "framework_dependency": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Merge P3-02 to canonical main, then P3-03 Skill/Asset Registry",
-  "rollback_point": "main@35ec0b5e623289c23596eab219c1b042dc515ccd"
+  "next_pointer": "Merge P3-03 to canonical main, then P3-04 Selective Retrieval / Context Minimization",
+  "rollback_point": "main@bfcc79afd7cf82316dad9b01151dfe2a003a1e75"
 }
