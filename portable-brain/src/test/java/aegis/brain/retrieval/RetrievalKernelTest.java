@@ -46,7 +46,7 @@ public final class RetrievalKernelTest {
 
         RetrievalPlan plan = new RetrievalPlan(
                 "storage rollback", "project-a", MemoryType.SEMANTIC, KnowledgeScope.PROJECT,
-                5, 3, 4, 0.80, 0.70, now);
+                5, 3, 5, 0.80, 0.70, now);
         RetrievalResult result = RetrievalKernel.retrieve(
                 List.of(usefulMemory, wrongScope, lowConfidence),
                 List.of(usefulKnowledge, staleKnowledge),
@@ -56,7 +56,7 @@ public final class RetrievalKernelTest {
         check(result.items().get(0).kind() == SourceKind.SKILL, "canonical matching skill ranked first");
         check(result.items().get(1).id().equals("m1"), "eligible memory selected");
         check(result.items().get(2).id().equals("k1"), "eligible knowledge selected");
-        check(result.usedBudget() == 4, "context budget accounted");
+        check(result.usedBudget() == 5, "context budget accounted");
         check(result.remainingBudget() == 0, "remaining budget accounted");
         check(!result.items().stream().anyMatch(item -> item.id().equals("m2")), "memory scope isolated");
         check(!result.items().stream().anyMatch(item -> item.id().equals("m3")), "low confidence memory excluded");
