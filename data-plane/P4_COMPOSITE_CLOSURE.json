@@ -1,16 +1,16 @@
 {
   "phase": "P4 Storage / Data Plane",
-  "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
+  "status": "P4_05_CANDIDATE_PENDING_FINAL_HEAD_CI",
   "canonical_owner": "aegis.data-plane",
   "verified_physical_gates": {
     "P4-01_dataset_registry": "VERIFIED_INTEGRATED",
     "P4-02_record_event_projection_consistency": "VERIFIED_INTEGRATED",
     "P4-03_migration_retention_backup_restore": "VERIFIED_INTEGRATED",
-    "P4-04_live_storage_adapters": "VERIFIED_READY_FOR_INTEGRATION"
+    "P4-04_live_storage_adapters": "VERIFIED_INTEGRATED",
+    "P4-RECOVERY-LIVE-001": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P4-05_composite_closure": "GAP",
-    "P4-RECOVERY-LIVE-001": "GAP"
+    "P4-05_composite_closure": "CANDIDATE_PENDING_FINAL_HEAD_CI"
   },
   "p4_03_evidence": {
     "registry_regression": "23/23",
@@ -20,46 +20,36 @@
     "release_package_guard": "PASS",
     "dependency": "java.base only",
     "jar": "aegis-data-plane-0.3.0.jar",
-    "jar_sha256": "8b6b61f2f334b74fc30dd1375eddd9d587caec120e9098ff3a50f82238cb74ba"
-  },
-  "p4_04_source_alignment": {
-    "decision": "REUSE_ADAPT_COMPOSE_SESSION_P4_5_HARNESS",
-    "postgres_live_contract": [
-      "source+outbox transaction",
-      "optimistic version update",
-      "projection monotonic replay"
-    ],
-    "redis_live_contract": [
-      "cache TTL",
-      "lease acquire/reject/release",
-      "monotonic fencing token",
-      "stale owner release rejection"
-    ]
+    "jar_sha256_recorded_at_p4_03": "8b6b61f2f334b74fc30dd1375eddd9d587caec120e9098ff3a50f82238cb74ba"
   },
   "p4_04_live_evidence": {
     "workflow_run": 33965819322,
     "workflow_job": 101305647083,
-    "merge_ref": "b155573c1bb215b78a4cfe8d2e09f242a28bfb87",
-    "core_regression": ["23/23", "21/21", "21/21"],
-    "evidence_count_guard": "PASS",
     "postgres_live": "PASS",
     "redis_live": "PASS",
+    "artifact_id": 9969382715,
+    "artifact_sha256": "e45b562e31243d3e40658d2d77a9ae6edb426ea272d7325a12d455ca8e6765e1"
+  },
+  "p4_recovery_live_evidence": {
+    "workflow_run": 33966156269,
+    "workflow_job": 101306550888,
+    "merge_ref": "5e1174e70ab2f06a8f176277da9e19b4ce71b8c7",
+    "core_regression": ["23/23", "21/21", "21/21"],
+    "evidence_count_guard": "PASS",
+    "backup_restore": "PASS",
+    "projection_rebuild": "PASS",
+    "retracted_projection_count": 0,
+    "stale_replay_source_version": 2,
+    "backup_sha256": "24673fe3d0f18c3b7359c493eff899a95b4a0d46e57dcb110d1201a91bd3732f",
+    "record_hash_after_restore": "af68e08e27d11e59b5f91af3fd917121",
+    "outbox_hash_after_restore": "77d7474c51a15b4a579904cfdd9dc720",
+    "projection_backup_hash_after_restore": "de02ce7bf924561701dceaec808b0cd1",
     "postgres_image": "postgres:16-alpine",
     "postgres_image_digest": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
     "postgres_version": "16.15",
-    "redis_image": "redis:7-alpine",
-    "redis_image_digest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
-    "redis_server_version": "7.4.11",
-    "redis_cli_version": "7.0.15",
     "java": "Temurin 21.0.12+1",
-    "checkout_action": "actions/checkout@v5",
-    "artifact_action": "actions/upload-artifact@v7",
-    "artifact_id": 9969382715,
-    "artifact_sha256": "e45b562e31243d3e40658d2d77a9ae6edb426ea272d7325a12d455ca8e6765e1",
-    "hardening_notes": [
-      "Redis CI service reported vm.overcommit_memory disabled; production deployment must explicitly address this.",
-      "redis:7-alpine is a moving major tag; production deployment must pin immutable image digest/version."
-    ]
+    "artifact_id": 9969487133,
+    "artifact_sha256": "8f3f7300af056fdaa728102d633ba82dee5efea9131a869e3c8fa908852cd946"
   },
   "ownership": {
     "dataset_registry_semantics": "aegis.data-plane",
@@ -79,17 +69,20 @@
     "migration requires before evidence, after validation and rollback point",
     "destructive migration requires explicit approval",
     "retention legal hold blocks deletion",
-    "restore requires owner, dataset, schema and integrity hash match",
-    "P4-04 reuses archived P4.5 Record/Event/Projection/Cache/Lease contracts",
-    "P4-04 live promotion requires PostgreSQL and Redis service-backed evidence",
-    "P4 commercial closure still requires P4-RECOVERY-LIVE-001",
+    "restore requires integrity evidence",
+    "backup restore must preserve canonical record and outbox content hashes",
+    "derived projection must be rebuildable from canonical outbox",
+    "RETRACTED tombstones must not resurrect into active projection",
+    "stale replay must not downgrade projection source version",
     "vendor bindings remain outside data-plane core"
   ],
   "compatibility": {
     "java": "21",
     "core_vendor_sdk": "NONE",
-    "hexagonal_boundary": "PRESERVED"
+    "hexagonal_boundary": "PRESERVED",
+    "existing_p4_contracts": "UNCHANGED"
   },
-  "next_pointer": "Merge P4-04 after final merge-ref CI, then execute P4-RECOVERY-LIVE-001 before P4-05 composite closure",
-  "rollback_point": "main@c015ce2ab9a69a268a73c83d95a3e34da3b82e4f"
+  "promotion_gate": "Final evidence-bearing PR head must rerun P4 Data Plane Verify + P4 Live Storage Integration + P4 Recovery Live Drill successfully before merge.",
+  "next_pointer": "Final evidence-bearing head CI -> merge P4-05 composite closure -> advance to next Commercial Release Gate",
+  "rollback_point": "main@10fc5ff76d0b753b2fb7227e01e0c23319cfbacb"
 }
