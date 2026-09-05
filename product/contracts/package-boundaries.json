@@ -1,0 +1,10 @@
+{
+  "version":"0.1.0",
+  "layers":["contracts","core-domain","application","responsibility","adapters","apps"],
+  "forbidden":[
+    {"from":"core-domain","to":"application"},
+    {"from":"core-domain","to":"adapters"},
+    {"from":"core-domain","to":"apps"},
+    {"from":"application","to":"apps"}
+  ]
+}

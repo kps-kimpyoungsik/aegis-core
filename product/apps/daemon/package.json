@@ -1,0 +1,9 @@
+{
+  "name": "aegis-daemon",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "aegis-worker": "0.7.0"
+  }
+}

@@ -1,0 +1,21 @@
+import { AegisStorageError, StorageErrorCodes, storageRecordKey } from "@aegis/storage-contracts";
+function cloneMap(map){return new Map([...map.entries()].map(([key,value])=>[key,structuredClone(value)]));}
+export class InMemoryStorageAdapter {
+constructor({now=()=>Date.now()}={}){this.now=now;this.records=new Map();this.outbox=new Map();this.inbox=new Set();this.idempotency=new Map();this.checkpoints=new Map();this.projectionPositions=new Map();this.leases=new Map();this.fencing=new Map();this.failNextOutbox=false;}
+snapshot(){return{records:cloneMap(this.records),outbox:cloneMap(this.outbox),inbox:new Set(this.inbox),idempotency:cloneMap(this.idempotency),checkpoints:cloneMap(this.checkpoints),projectionPositions:cloneMap(this.projectionPositions),leases:cloneMap(this.leases),fencing:new Map(this.fencing)};}
+restore(snapshot){Object.assign(this,snapshot);} async runInTransaction(operation){const before=this.snapshot();try{return await operation();}catch(error){this.restore(before);throw error;}}
+async loadRecord(datasetId,recordId){const value=this.records.get(storageRecordKey(datasetId,recordId));return value?structuredClone(value):undefined;}
+async saveRecord(datasetId,recordId,payload,expectedVersion){const key=storageRecordKey(datasetId,recordId);const current=this.records.get(key);const actualVersion=current?.version??0;if(actualVersion!==expectedVersion)throw new AegisStorageError(StorageErrorCodes.VERSION_CONFLICT,`version conflict for ${key}: expected ${expectedVersion}, actual ${actualVersion}`,{datasetId,recordId,expectedVersion,actualVersion});const next={datasetId,recordId,version:actualVersion+1,payload:structuredClone(payload)};this.records.set(key,next);return structuredClone(next);}
+async appendOutbox(record){if(this.failNextOutbox){this.failNextOutbox=false;throw new AegisStorageError(StorageErrorCodes.OUTBOX_ATOMICITY_VIOLATION,"injected outbox failure");}if(this.outbox.has(record.id))throw new AegisStorageError(StorageErrorCodes.DUPLICATE_OPERATION,`duplicate outbox id ${record.id}`);this.outbox.set(record.id,structuredClone(record));}
+async listPendingOutbox(){return [...this.outbox.values()].filter(row=>row.status==="PENDING").map(row=>structuredClone(row));}
+async markOutboxDispatched(id){const row=this.outbox.get(id);if(!row)return false;this.outbox.set(id,{...row,status:"DISPATCHED"});return true;}
+async markInbox(consumerId,messageId){const key=`${consumerId}::${messageId}`;if(this.inbox.has(key))return false;this.inbox.add(key);return true;}
+async getIdempotencyResult(scope,key){const composite=`${scope}::${key}`;return this.idempotency.has(composite)?structuredClone(this.idempotency.get(composite)):undefined;}
+async putIdempotencyResult(scope,key,value){this.idempotency.set(`${scope}::${key}`,structuredClone(value));}
+async saveCheckpoint(checkpointId,state,expectedVersion){const current=this.checkpoints.get(checkpointId);const actualVersion=current?.version??0;if(actualVersion!==expectedVersion)throw new AegisStorageError(StorageErrorCodes.INVALID_CHECKPOINT,`checkpoint version conflict for ${checkpointId}`,{checkpointId,expectedVersion,actualVersion});const next={checkpointId,version:actualVersion+1,state:structuredClone(state)};this.checkpoints.set(checkpointId,next);return structuredClone(next);}
+async loadCheckpoint(checkpointId){const value=this.checkpoints.get(checkpointId);return value?structuredClone(value):undefined;}
+async advanceProjection(projectionId,position){const current=this.projectionPositions.get(projectionId)??0;if(position<current)throw new AegisStorageError(StorageErrorCodes.PROJECTION_POSITION_REGRESSION,`projection ${projectionId} cannot move from ${current} to ${position}`,{projectionId,current,position});this.projectionPositions.set(projectionId,position);return position;}
+projectionPosition(projectionId){return this.projectionPositions.get(projectionId)??0;}
+acquireLease(resource,holder,ttlMs){const now=this.now();const current=this.leases.get(resource);if(current&&current.expiresAt>now&&current.holder!==holder)return undefined;const token=(this.fencing.get(resource)??0)+1;this.fencing.set(resource,token);const lease={resource,holder,fencingToken:token,expiresAt:now+ttlMs};this.leases.set(resource,lease);return structuredClone(lease);}
+currentFencingToken(resource){return this.fencing.get(resource)??0;}
+}

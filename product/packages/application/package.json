@@ -1,0 +1,8 @@
+{
+  "name": "@aegis/application",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "exports": "./index.js",
+  "dependencies": {"@aegis/core-domain": "0.2.0"}
+}

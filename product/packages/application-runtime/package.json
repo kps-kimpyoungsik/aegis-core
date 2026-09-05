@@ -1,0 +1,15 @@
+{
+  "name": "@aegis/application-runtime",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "exports": "./index.js",
+  "dependencies": {
+    "@aegis/core-domain": "0.2.0",
+    "@aegis/responsibility": "0.2.0",
+    "@aegis/retrieval-runtime": "0.5.0",
+    "@aegis/memory-runtime": "0.5.0",
+    "@aegis/memory-contracts": "0.5.0",
+    "@aegis/harness-runtime": "0.4.0"
+  }
+}

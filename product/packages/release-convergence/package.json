@@ -1,0 +1,6 @@
+{
+  "name": "@aegis/release-convergence",
+  "version": "0.6.0",
+  "type": "module",
+  "exports": "./index.js"
+}
