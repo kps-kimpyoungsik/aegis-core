@@ -43,10 +43,11 @@
     "signedAttestation": "PASS",
     "stagingRollbackDrill": "PASS",
     "ociSignatureBoundary": "PASS",
+    "boundedLoadSoakReliability": "PASS",
     "productionKmsCustody": "NOT_EXECUTED",
     "productionRegistrySigning": "NOT_EXECUTED",
     "productionBackupRestore": "NOT_EXECUTED",
-    "loadSoakQualification": "NOT_EXECUTED",
+    "productionScaleLoadSoakQualification": "NOT_EXECUTED",
     "penetrationSecurityQualification": "NOT_EXECUTED",
     "productionApproval": "NOT_EXECUTED"
   },
