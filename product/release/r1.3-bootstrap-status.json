@@ -1,0 +1,14 @@
+{
+  "release_gate": "R1.3_DEPENDENCY_REPRODUCIBILITY",
+  "baseline": "986a291a116e3231b21dcb039eaae0dc511eb544",
+  "status": "BOOTSTRAP_EVIDENCE_ONLY",
+  "canonical_owner_changes": false,
+  "requires": [
+    "generated package-lock.json",
+    "stable lock digest",
+    "npm ci regression pass",
+    "committed verified lock",
+    "R1.2 CI/Docker npm ci migration"
+  ],
+  "rollback_point": "986a291a116e3231b21dcb039eaae0dc511eb544"
+}
