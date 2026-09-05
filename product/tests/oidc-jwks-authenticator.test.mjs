@@ -73,6 +73,7 @@ test("expired and not-yet-valid tokens fail closed", async () => {
   const { authenticate } = authenticator({ clockSkewSeconds: 0 });
   assert.equal(await authenticate(request(jwt({ exp: nowSeconds - 1 }))), null);
   assert.equal(await authenticate(request(jwt({ nbf: nowSeconds + 1 }))), null);
+  assert.equal(await authenticate(request(jwt({ iat: nowSeconds + 1 }))), null);
 });
 
 test("tampered payload and unknown kid fail closed", async () => {
