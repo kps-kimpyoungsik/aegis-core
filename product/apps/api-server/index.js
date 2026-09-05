@@ -1,16 +1,59 @@
 import http from "node:http";
 import { createTask } from "@aegis/core-domain";
 
+const MAX_JSON_BODY_BYTES = 64 * 1024;
+
+class ApiInputError extends Error {
+  constructor(status, code) {
+    super(code);
+    this.name = "ApiInputError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 function json(res, status, body) {
-  res.writeHead(status, { "content-type": "application/json" });
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+  });
   res.end(JSON.stringify(body));
 }
 
+function isJsonContentType(value) {
+  if (typeof value !== "string") return false;
+  return value.split(";", 1)[0].trim().toLowerCase() === "application/json";
+}
+
 async function readJson(req) {
+  if (!isJsonContentType(req.headers["content-type"])) {
+    throw new ApiInputError(415, "AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED");
+  }
+
+  const declaredLength = Number(req.headers["content-length"] ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_BODY_BYTES) {
+    req.resume();
+    throw new ApiInputError(413, "AEGIS-API-004 PAYLOAD_TOO_LARGE");
+  }
+
   const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
+  let receivedBytes = 0;
+  for await (const chunk of req) {
+    receivedBytes += chunk.length;
+    if (receivedBytes > MAX_JSON_BODY_BYTES) {
+      req.resume();
+      throw new ApiInputError(413, "AEGIS-API-004 PAYLOAD_TOO_LARGE");
+    }
+    chunks.push(chunk);
+  }
   if (chunks.length === 0) return {};
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+
+  try {
+    return JSON.parse(Buffer.concat(chunks, receivedBytes).toString("utf8"));
+  } catch {
+    throw new ApiInputError(400, "AEGIS-API-005 MALFORMED_JSON");
+  }
 }
 
 export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID() } = {}) {
@@ -35,7 +78,8 @@ export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [],
       }
       return json(res, 404, { code: "AEGIS-API-404 NOT_FOUND" });
     } catch (error) {
-      return json(res, 500, { code: "AEGIS-API-500 INTERNAL_ERROR", message: String(error?.message ?? error) });
+      if (error instanceof ApiInputError) return json(res, error.status, { code: error.code });
+      return json(res, 500, { code: "AEGIS-API-500 INTERNAL_ERROR" });
     }
   });
 }
