@@ -1,0 +1,55 @@
+{
+  "phase": "P4 Storage / Data Plane",
+  "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
+  "canonical_owner": "aegis.data-plane",
+  "verified_physical_gates": {
+    "P4-01_dataset_registry": "VERIFIED_READY_FOR_INTEGRATION"
+  },
+  "recorded_but_not_physically_verified_in_canonical_repo": {
+    "P4-02_record_event_projection_consistency": "GAP",
+    "P4-03_migration_retention_backup_restore": "GAP",
+    "P4-04_live_storage_adapters": "GAP",
+    "P4-05_composite_closure": "GAP"
+  },
+  "p4_01_evidence": {
+    "workflow_run": 33960603723,
+    "workflow_job": 101291721012,
+    "assertions": "23/23",
+    "evidence_count_guard": "PASS",
+    "release_package_guard": "PASS",
+    "java": "Temurin 21.0.12+1",
+    "dependency": "java.base only",
+    "jar": "aegis-data-plane-0.1.0.jar",
+    "jar_sha256": "802384a4d8959cc5e7c6678640a4af6a58342656cac3d0a871e14dfcdce05acd",
+    "artifact_id": 9967803321,
+    "artifact_zip_sha256": "1da9370d7b79a8d3d1178d81b821795ec572d59ba25e550c4204c419581bf93a"
+  },
+  "ownership": {
+    "dataset_registry_semantics": "aegis.data-plane",
+    "dataset_semantic_owner": "declared_per_dataset",
+    "write_port": "declared_per_dataset",
+    "source_of_truth": "single_per_logical_dataset",
+    "transaction_boundary": "declared_per_dataset",
+    "event_boundary": "declared_per_dataset",
+    "side_effect_owner": "declared_per_dataset",
+    "recovery_owner": "declared_per_dataset",
+    "retention_owner": "declared_per_dataset",
+    "migration_owner": "declared_per_dataset"
+  },
+  "invariants": [
+    "one dataset identity has one canonical definition",
+    "one logical dataset cannot have multiple declared sources of truth",
+    "projection and index datasets cannot be declared source of truth",
+    "write authority requires both canonical owner and write port match",
+    "projection linkage requires same logical dataset key and a declared source of truth",
+    "vendor storage SDKs remain outside data-plane core contracts"
+  ],
+  "compatibility": {
+    "java": "21",
+    "vendor_sdk": "NONE",
+    "framework_dependency": "NONE",
+    "hexagonal_boundary": "PRESERVED"
+  },
+  "next_pointer": "Merge P4-01 to canonical main, then P4-02 Record/Event/Projection consistency",
+  "rollback_point": "main@b357b0a0ba68461edcf67e2a13934bbf42c4be42"
+}

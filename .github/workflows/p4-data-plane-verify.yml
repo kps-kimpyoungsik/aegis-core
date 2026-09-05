@@ -1,0 +1,47 @@
+name: P4 Data Plane Verify
+
+on:
+  pull_request:
+    paths:
+      - 'data-plane/**'
+      - '.github/workflows/p4-data-plane-verify.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data-plane/**'
+      - '.github/workflows/p4-data-plane-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify Data Plane
+        working-directory: data-plane
+        run: bash verify.sh
+      - name: Verify release package exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          jars=(data-plane/build/dist/aegis-data-plane-*.jar)
+          if [[ ${#jars[@]} -ne 1 ]]; then
+            echo "RELEASE_PACKAGE_GUARD_FAIL expected=1 actual=${#jars[@]}" >&2
+            exit 41
+          fi
+          echo "RELEASE_PACKAGE_GUARD=PASS jar=${jars[0]}"
+      - name: Upload data plane package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-data-plane
+          path: |
+            data-plane/build/dist/aegis-data-plane-*.jar
+            data-plane/build/evidence/**
+          if-no-files-found: error
