@@ -1,0 +1,5 @@
+package io.aegis.contracts;
+
+public enum TaskStatus {
+    NEW, DIAGNOSING, PLANNED, READY, RUNNING, VALIDATING, COMPLETED, FAILED, PAUSED, CANCELLED, ROLLING_BACK, ROLLED_BACK
+}
