@@ -1,0 +1,63 @@
+name: R1.13 Product OIDC JWT Verification
+
+on:
+  pull_request:
+    paths:
+      - 'product/apps/api-server/**'
+      - 'product/tests/oidc-jwt-authenticator.test.mjs'
+      - '.github/workflows/r1.13-product-oidc-jwt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  oidc-jwt-verification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked dependencies
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: OIDC JWT security regression
+        working-directory: product
+        run: node --test tests/oidc-jwt-authenticator.test.mjs
+      - name: Canonical deterministic regression
+        working-directory: product
+        run: npm run verify:deterministic
+      - name: Quality gates
+        working-directory: product
+        run: |
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Record boundary evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.13-oidc-jwt
+          {
+            echo 'R1_13_OIDC_JWT_VERIFICATION=PASS'
+            echo 'scope=rs256_signature_issuer_audience_temporal_claim_jwks_rotation'
+            echo 'oidc_discovery=EXECUTED_WITH_SYNTHETIC_PROVIDER'
+            echo 'production_idp=NOT_EXECUTED'
+            echo 'token_revocation=NOT_EXECUTED'
+            echo 'external_penetration_test=NOT_EXECUTED'
+            echo "commit=${GITHUB_SHA}"
+          } > build/r1.13-oidc-jwt/environment.txt
+          sha256sum product/apps/api-server/index.js product/apps/api-server/oidc-jwt-authenticator.js product/tests/oidc-jwt-authenticator.test.mjs .github/workflows/r1.13-product-oidc-jwt.yml > build/r1.13-oidc-jwt/source-sha256.txt
+      - name: Upload evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.13-oidc-jwt-evidence
+          path: build/r1.13-oidc-jwt/**
+          if-no-files-found: error
+          retention-days: 30
