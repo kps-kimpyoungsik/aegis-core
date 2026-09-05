@@ -1,4 +1,3 @@
-import React from "react";
 import { projectRuntimeSnapshot } from "./projection.js";
 
 const releaseRows = [
