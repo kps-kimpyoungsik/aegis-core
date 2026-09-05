@@ -4,14 +4,14 @@
   "canonical_owner": "aegis.work-runtime",
   "verified_physical_gates": {
     "P2-01_execution_context_state_machine": "VERIFIED_INTEGRATED",
-    "P2-02_dispatcher_tool_event_loop_scheduler": "VERIFIED_READY_FOR_INTEGRATION",
+    "P2-02_dispatcher_tool_event_loop_scheduler": "VERIFIED_INTEGRATED",
+    "P2-03_checkpoint_resume_crash_replay": "VERIFIED_READY_FOR_INTEGRATION",
     "P2-05_validation_compare": "VERIFIED_INTEGRATED",
     "P2-06_idempotency_envelope": "VERIFIED_INTEGRATED",
     "P2-07_trace_audit_correlation": "VERIFIED_INTEGRATED",
     "P2-08_rollback_coordination": "VERIFIED_INTEGRATED"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P2-03_checkpoint_resume_crash_replay": "GAP",
     "P2-04_budget_deadline_cancellation_backpressure": "GAP"
   },
   "p2_01_evidence": {
@@ -25,21 +25,31 @@
   "p2_02_evidence": {
     "workflow_run": 33927605924,
     "assertions": "17/17",
-    "regression": ["16/16", "14/14", "16/16", "17/17"],
-    "evidence_count_guard": "PASS",
     "dependency": "java.base only",
     "jar": "aegis-runtime-kernel-0.6.0.jar",
     "jar_sha256": "04c135d411ef146694fe9b5c69eeef801e6b1e83f29eea11a639c125d1d2bce0",
     "artifact_id": 9957361407
   },
-  "closure_rule": "P2 cannot be commercially closed until P2-03 and P2-04 have canonical physical source, regression evidence, dependency evidence, rollback and provenance in this repository or an accepted canonical reusable package.",
+  "p2_03_evidence": {
+    "workflow_run": 33936278817,
+    "assertions": "19/19",
+    "regression": ["16/16", "17/17", "14/14", "16/16", "17/17"],
+    "evidence_count_guard": "PASS",
+    "dependency": "java.base only",
+    "jar": "aegis-runtime-kernel-0.7.0.jar",
+    "jar_sha256": "0855bc52286a378b835790e45aa2f17f823ad07a7ccfcc67c07927594d58e8bb",
+    "artifact_id": 9960270892,
+    "artifact_zip_sha256": "d5aff47f490912f0a83dcf2321b29d48645bc0a6bf6c70193b49960b128fa9f3"
+  },
+  "closure_rule": "P2 cannot be commercially closed until P2-04 has canonical physical source, regression evidence, dependency evidence, rollback and provenance in this repository or an accepted canonical reusable package.",
   "failure_signatures": [
     {
       "id": "TEST_EVIDENCE_DECLARED_COUNT_DRIFT",
-      "observed_count": 2,
+      "observed_count": 3,
       "mechanism": "test assertion count changed while hard-coded declared denominator did not",
       "promotion": "DETERMINISTIC_CI_GUARD",
-      "guard": "verify.sh rejects PASS actual/declared mismatch"
+      "guard": "verify.sh rejects PASS actual/declared mismatch",
+      "latest_observation": "P2-03 initial run reported PASS 19/18 and was blocked before promotion"
     }
   ],
   "security_and_reliability": {
@@ -51,11 +61,17 @@
     "result_correlation": "EXECUTION_COMMAND_INVOCATION_EPOCH_GATED",
     "duplicate_event_handling": "IDEMPOTENT",
     "scheduler_lease_winner": "EXPLICIT",
+    "checkpoint_requires_waiting": "ACTIVE",
+    "checkpoint_state_version_guard": "ACTIVE",
+    "crash_resume_epoch_advance": "ACTIVE",
+    "replay_sequence_guard": "ACTIVE",
+    "replay_event_dedup": "ACTIVE",
+    "completed_effect_replay_suppression": "ACTIVE",
     "stale_result_rejection": "ACTIVE",
     "audit_source_provenance": "EXPLICIT",
     "trace_sensitive_attribute_guard": "ACTIVE",
     "rollback_authority_gate": "ACTIVE"
   },
-  "next_pointer": "P2-03 Checkpoint / Resume / Crash Recovery / Replay Safety physical canonical implementation",
-  "rollback_point": "main@64b566fd12bc229ecb135b146017c65ef17f0b58"
+  "next_pointer": "P2-04 Budget / Deadline / Cancellation / Backpressure physical canonical implementation",
+  "rollback_point": "main@4df955caecb1dbf6a9a4ce037f4b3d0e5811e66d"
 }
