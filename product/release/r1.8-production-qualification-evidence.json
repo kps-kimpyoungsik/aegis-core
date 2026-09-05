@@ -10,7 +10,7 @@
     "G3_SECURITY": "NOT_EXECUTED",
     "G4_DATA_SAFETY": "PARTIAL",
     "G5_STAGING": "PARTIAL",
-    "G6_RELIABILITY_PERFORMANCE": "NOT_EXECUTED",
+    "G6_RELIABILITY_PERFORMANCE": "PARTIAL",
     "G7_ROLLBACK": "PARTIAL",
     "G8_PRODUCTION_APPROVAL": "NOT_EXECUTED"
   },
@@ -22,7 +22,7 @@
     "staging": ["R1.4 local production-like staging rollout/rollback", "cloud/Kubernetes traffic cutover NOT_EXECUTED"],
     "rollback": ["R1.4 immutable container rollback PASS", "production deployment rollback NOT_EXECUTED"],
     "security": ["supply-chain scanning PASS", "penetration/security qualification NOT_EXECUTED"],
-    "reliabilityPerformance": ["load/soak/performance qualification NOT_EXECUTED"],
+    "reliabilityPerformance": ["R1.7 bounded 30-second concurrency-32 load/soak reliability PASS", "production-scale soak/SLO/capacity qualification NOT_EXECUTED"],
     "productionApproval": ["human production approval NOT_EXECUTED"]
   },
   "publicOpenEvidence": {
@@ -42,7 +42,8 @@
     "production_registry_signing": "BLOCKED_BY_ENVIRONMENT",
     "cloud_kubernetes_traffic_cutover": "BLOCKED_BY_ENVIRONMENT",
     "production_backup_restore": "NOT_EXECUTED",
-    "load_soak": "NOT_EXECUTED",
+    "bounded_ci_load_soak": "PASS",
+    "production_scale_load_soak": "NOT_EXECUTED",
     "penetration_security": "NOT_EXECUTED"
   },
   "expectedDecision": "NOT_PROMOTED",
