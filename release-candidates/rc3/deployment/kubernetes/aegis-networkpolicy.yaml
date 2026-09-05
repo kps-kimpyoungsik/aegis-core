@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aegis-server-default-deny
+spec:
+  podSelector:
+    matchLabels:
+      app: aegis-server
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aegis-server-allow-labeled-clients
+spec:
+  podSelector:
+    matchLabels:
+      app: aegis-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              access-aegis: "true"
+      ports:
+        - protocol: TCP
+          port: 8080
