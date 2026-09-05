@@ -16,6 +16,8 @@ import {
   executeHarness,
 } from '@aegis/harness-runtime';
 
+const executorAuthenticator = async () => ({ id:'principal:e2e-operator', roles:['TASK_EXECUTOR'] });
+
 async function withServer(options, fn) {
   const server = createApiServer(options);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -54,9 +56,9 @@ const reusableMemory = createMemoryItem({
   content: { lesson: 'reuse verified release path' }, provenance: { sourceRef: 'episode:r0.7', sourceType: 'PAST_SUCCESS' },
 });
 
-test('E2E success: API -> application -> harness -> episode/event snapshot -> React projection', async () => {
+test('E2E success: authenticated API -> application -> harness -> episode/event snapshot -> React projection', async () => {
   const runtime = createTaskExecutionUseCase({ runHarness: makeHarness(), memoryItems: [reusableMemory], retrievalPolicy: { maxItems: 1 } });
-  await withServer({ executeTask: runtime.executeTask, getSnapshot: runtime.getSnapshot, idFactory: () => 'e2e-success' }, async (base) => {
+  await withServer({ executeTask: runtime.executeTask, authenticateRequest:executorAuthenticator, getSnapshot: runtime.getSnapshot, idFactory: () => 'e2e-success' }, async (base) => {
     const create = await fetch(`${base}/v1/tasks`, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ goal:'ship e2e', owner:'ops', responsibility:'release', retrievalQuery:{ key:'release' } }) });
     assert.equal(create.status, 202);
     const result = await create.json();
@@ -66,6 +68,7 @@ test('E2E success: API -> application -> harness -> episode/event snapshot -> Re
     assert.equal(result.harnessResult.provenance.memory[0], 'mem:release');
 
     const snapshotResponse = await fetch(`${base}/v1/runtime/snapshot`);
+    assert.equal(snapshotResponse.status, 200);
     const snapshot = await snapshotResponse.json();
     assert.equal(snapshot.tasks[0].status, 'COMPLETED');
     assert.equal(snapshot.memories[0].kind, 'EPISODIC');
@@ -76,9 +79,9 @@ test('E2E success: API -> application -> harness -> episode/event snapshot -> Re
   });
 });
 
-test('E2E failure: authority deny -> FAILED + failure memory -> snapshot -> React failure projection', async () => {
+test('E2E failure: authenticated API -> authority deny -> FAILED + failure memory -> snapshot -> React failure projection', async () => {
   const runtime = createTaskExecutionUseCase({ runHarness: makeHarness({ deny: true }) });
-  await withServer({ executeTask: runtime.executeTask, getSnapshot: runtime.getSnapshot, idFactory: () => 'e2e-failure' }, async (base) => {
+  await withServer({ executeTask: runtime.executeTask, authenticateRequest:executorAuthenticator, getSnapshot: runtime.getSnapshot, idFactory: () => 'e2e-failure' }, async (base) => {
     const create = await fetch(`${base}/v1/tasks`, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ goal:'deny unsafe execution', owner:'ops', responsibility:'release' }) });
     assert.equal(create.status, 422);
     const result = await create.json();
@@ -86,7 +89,9 @@ test('E2E failure: authority deny -> FAILED + failure memory -> snapshot -> Reac
     assert.equal(result.memory.kind, 'FAILURE');
     assert.equal(result.memory.content.code, 'AEGIS-HARNESS-001');
 
-    const snapshot = await (await fetch(`${base}/v1/runtime/snapshot`)).json();
+    const snapshotResponse = await fetch(`${base}/v1/runtime/snapshot`);
+    assert.equal(snapshotResponse.status, 200);
+    const snapshot = await snapshotResponse.json();
     assert.equal(snapshot.tasks[0].status, 'FAILED');
     assert.equal(snapshot.memories[0].kind, 'FAILURE');
     assert.ok(snapshot.events.some((event) => event.type === 'FAILURE'));

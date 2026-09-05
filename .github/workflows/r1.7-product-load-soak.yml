@@ -14,6 +14,10 @@ jobs:
   product-load-soak:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      AEGIS_CI_BEARER_TOKEN: r1.10-ci-load-bearer-token-not-secret-0001
+      AEGIS_CI_PRINCIPAL_ID: principal:r1.7-load-soak
+      AEGIS_CI_ROLES: RUNTIME_VIEWER
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -46,6 +50,9 @@ jobs:
           docker run -d --rm \
             --name aegis-r1-7-candidate \
             --publish 18080:8080 \
+            --env AEGIS_API_BEARER_TOKEN="${AEGIS_CI_BEARER_TOKEN}" \
+            --env AEGIS_API_PRINCIPAL_ID="${AEGIS_CI_PRINCIPAL_ID}" \
+            --env AEGIS_API_ROLES="${AEGIS_CI_ROLES}" \
             aegis-product:r1.7-candidate \
             | tee build/r1.7-load-soak/container-id.txt
           for attempt in $(seq 1 60); do
@@ -62,6 +69,10 @@ jobs:
             | tee build/r1.7-load-soak/pre-load-live.json
           curl --fail --silent http://127.0.0.1:18080/health/ready \
             | tee build/r1.7-load-soak/pre-load-ready.json
+          curl --fail --silent \
+            --header "Authorization: Bearer ${AEGIS_CI_BEARER_TOKEN}" \
+            http://127.0.0.1:18080/v1/runtime/snapshot \
+            | tee build/r1.7-load-soak/pre-load-authenticated-snapshot.json
 
       - name: Sustained concurrent read-path load
         env:
@@ -74,6 +85,7 @@ jobs:
           const baseUrl = process.env.AEGIS_LOAD_BASE_URL;
           const durationMs = Number(process.env.AEGIS_LOAD_DURATION_MS);
           const concurrency = Number(process.env.AEGIS_LOAD_CONCURRENCY);
+          const bearerToken = process.env.AEGIS_CI_BEARER_TOKEN;
           const deadline = Date.now() + durationMs;
           const latencies = [];
           const statuses = new Map();
@@ -98,9 +110,11 @@ jobs:
               sequence += 1;
               const started = performance.now();
               try {
+                const headers = { 'x-aegis-load-worker': String(id) };
+                if (path === '/v1/runtime/snapshot') headers.authorization = `Bearer ${bearerToken}`;
                 const response = await fetch(`${baseUrl}${path}`, {
                   signal: AbortSignal.timeout(2000),
-                  headers: { 'x-aegis-load-worker': String(id) },
+                  headers,
                 });
                 await response.arrayBuffer();
                 const elapsed = performance.now() - started;
@@ -142,6 +156,7 @@ jobs:
             acceptance: {
               minimumRequests: 1000,
               zeroHttpOrTransportFailures: true,
+              authenticatedSnapshotPath: true,
               latencySloQualification: 'NOT_CLAIMED',
             },
           };
@@ -156,6 +171,10 @@ jobs:
             | tee build/r1.7-load-soak/post-load-live.json
           curl --fail --silent http://127.0.0.1:18080/health/ready \
             | tee build/r1.7-load-soak/post-load-ready.json
+          curl --fail --silent \
+            --header "Authorization: Bearer ${AEGIS_CI_BEARER_TOKEN}" \
+            http://127.0.0.1:18080/v1/runtime/snapshot \
+            | tee build/r1.7-load-soak/post-load-authenticated-snapshot.json
           docker inspect aegis-r1-7-candidate \
             --format '{{json .State.Health}}' \
             | tee build/r1.7-load-soak/docker-health.json
@@ -174,9 +193,12 @@ jobs:
           set -euo pipefail
           {
             echo 'R1_7_LOAD_SOAK_RELIABILITY=PASS'
-            echo 'scope=sustained_concurrent_read_path_reliability'
+            echo 'scope=sustained_concurrent_authenticated_read_path_reliability'
+            echo 'authentication_adapter=CI_BOOTSTRAP_BEARER'
+            echo 'authentication_secret_class=SYNTHETIC_NON_PRODUCTION'
             echo 'latency_slo_qualification=NOT_CLAIMED'
             echo 'production_capacity_qualification=NOT_CLAIMED'
+            echo 'production_oidc_jwks=NOT_EXECUTED'
             echo 'production_kms_custody=BLOCKED_BY_ENVIRONMENT'
             echo 'production_registry_signing=BLOCKED_BY_ENVIRONMENT'
             echo "commit=${GITHUB_SHA}"

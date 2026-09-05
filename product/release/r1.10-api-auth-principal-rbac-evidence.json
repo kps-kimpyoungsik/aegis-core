@@ -1,0 +1,124 @@
+{
+  "gate": "R1.10_API_AUTH_PRINCIPAL_RBAC_BOUNDARY",
+  "status": "VERIFIED_READY_FOR_EXACT_HEAD_REGRESSION",
+  "canonicalOwner": "api-adapter",
+  "rollbackPoint": "main@ec933eb9b951f47f267f2cb7a210293f29927027",
+  "pullRequest": 57,
+  "candidateBeforeEvidenceLedger": "7acaaf6e27ccdc243dce05ccb6b5ba706851ad56",
+  "decision": ["REUSE", "ADAPT", "COMPOSE", "VERIFY", "COMPARE"],
+  "capability": {
+    "id": "AEGIS.API.AUTH_PRINCIPAL_RBAC_BOUNDARY",
+    "responsibility": [
+      "consume verified request identity",
+      "validate principal shape",
+      "enforce endpoint role gates",
+      "propagate principal separately to application",
+      "fail closed when authentication is absent or malformed"
+    ],
+    "contracts": {
+      "authenticateRequest": "request -> Principal|null",
+      "principal": {"id": "non-empty string", "roles": "non-empty string[]"},
+      "taskCommandRole": "TASK_EXECUTOR",
+      "runtimeSnapshotRoles": ["RUNTIME_VIEWER", "TASK_EXECUTOR"]
+    },
+    "authority": {
+      "owner": "api-adapter",
+      "rootAuthorityOwner": false,
+      "securityPolicyOwner": false,
+      "independentVerifierOwner": false,
+      "oidcVerifierOwner": false
+    },
+    "dataOwnership": {
+      "principalTransport": "api-adapter",
+      "taskOwnerSemantics": "UNCHANGED"
+    },
+    "failureModel": {
+      "missingAuth": "REJECT_401",
+      "malformedPrincipal": "REJECT_401",
+      "forgedBearer": "REJECT_401",
+      "insufficientRole": "REJECT_403",
+      "weakBootstrapToken": "STARTUP_BLOCK",
+      "missingBootstrapIdentityOrRoles": "STARTUP_BLOCK"
+    }
+  },
+  "deterministicEvidence": {
+    "tests": 63,
+    "passed": 63,
+    "failed": 0,
+    "ownershipCheck": "PASS",
+    "contractCheck": "PASS",
+    "architectureCheck": "PASS",
+    "packageBoundaryCheck": "PASS",
+    "duplicateCheck": "PASS",
+    "packageVersionCheck": "PASS",
+    "strictConfigCheck": "PASS",
+    "releaseManifestCheck": "PASS",
+    "lint": "PASS",
+    "releaseTypecheck": "PASS",
+    "reactSpaProductionBuild": "PASS"
+  },
+  "failureHistory": [
+    {
+      "signature": "LOAD_HARNESS_AUTH_CONTRACT_DRIFT",
+      "workflowRun": 33997936936,
+      "job": 101391619689,
+      "candidate": "ba6d2f4881b5027993a9bac93e77ff29bbb1365d",
+      "observed": {
+        "totalRequests": 199274,
+        "httpFailures": 66415,
+        "transportErrors": 0,
+        "status200": 132859,
+        "status401": 66415
+      },
+      "cause": "R1.7 load harness called newly protected runtime snapshot without authentication",
+      "promotionDecision": "REJECT_UNTIL_CAUSAL_FIX"
+    }
+  ],
+  "causalFix": {
+    "runtime": "compose fail-closed environment bootstrap bearer verifier for the default API server",
+    "comparison": "constant-time timingSafeEqual after equal-length check",
+    "minimumTokenBytes": 32,
+    "harness": "R1.7 uses a synthetic non-production RUNTIME_VIEWER principal and authenticates the protected snapshot path",
+    "weakenedAcceptance": false
+  },
+  "authenticatedLoadSoakEvidence": {
+    "workflowRun": 33998086248,
+    "job": 101392003941,
+    "durationMs": 30000,
+    "concurrency": 32,
+    "totalRequests": 159830,
+    "failures": 0,
+    "transportErrors": 0,
+    "successRate": 100,
+    "requestsPerSecond": 5326.886,
+    "status200": 159830,
+    "latencyMs": {"p50": 5.319, "p95": 9.661, "p99": 13.49, "max": 84.953},
+    "latencySloQualification": "NOT_CLAIMED",
+    "candidateImageSha256": "33202fc0a3bcae8d58e6f00750919b936d71232abb54a8ccee89e0ede35d3e2f",
+    "artifactId": 9978665327,
+    "artifactSha256": "92903bca50933f6969eb3d12426be6934ffb02cfcc7ffb597c0a54d404436561"
+  },
+  "releaseRegressionBeforeEvidenceLedger": {
+    "expectedWorkflows": 10,
+    "successfulWorkflows": 10,
+    "result": "PASS"
+  },
+  "boundaries": {
+    "oidcJwksSignatureVerification": "NOT_EXECUTED",
+    "issuerAudienceValidation": "NOT_EXECUTED",
+    "tokenRevocation": "NOT_EXECUTED",
+    "productionIdpIntegration": "NOT_EXECUTED",
+    "waf": "NOT_EXECUTED",
+    "rateLimiting": "NOT_EXECUTED",
+    "externalPenetrationTest": "NOT_EXECUTED",
+    "ddosCapacityQualification": "NOT_EXECUTED",
+    "productionKmsCustody": "BLOCKED_BY_ENVIRONMENT",
+    "productionRegistrySigning": "BLOCKED_BY_ENVIRONMENT",
+    "commercialGa": "BLOCKED"
+  },
+  "provenance": {
+    "sourceRepository": "kps-kimpyoungsik/aegis-core",
+    "globalCrossSessionScan": "NOT_EXECUTED",
+    "visibleRepositoryAndPullRequestScan": "EXECUTED"
+  }
+}
