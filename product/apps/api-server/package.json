@@ -1,6 +1,10 @@
 {
   "name": "aegis-api-server",
-  "version": "0.2.0",
+  "version": "0.7.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@aegis/core-domain": "0.2.0",
+    "@aegis/application-runtime": "0.6.0"
+  }
 }
