@@ -1,6 +1,7 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { createTask } from "@aegis/core-domain";
+import { createOidcJwtAuthenticator } from "./oidc-jwt-authenticator.js";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
 const MIN_BEARER_TOKEN_BYTES = 32;
@@ -87,7 +88,7 @@ function parseRoles(value) {
   return [...new Set(value.split(",").map((role) => role.trim()).filter(Boolean))];
 }
 
-function createEnvironmentAuthenticator(env = process.env) {
+export function createEnvironmentAuthenticator(env = process.env) {
   const token = env.AEGIS_API_BEARER_TOKEN;
   if (!token) return async () => null;
 
@@ -112,6 +113,24 @@ function createEnvironmentAuthenticator(env = process.env) {
     if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
     return principal;
   };
+}
+
+export function createConfiguredAuthenticator(env = process.env, options = {}) {
+  const oidcIssuer = env.AEGIS_OIDC_ISSUER?.trim();
+  const oidcAudience = env.AEGIS_OIDC_AUDIENCE?.trim();
+  const oidcConfigured = Boolean(oidcIssuer || oidcAudience);
+  if (oidcConfigured) {
+    if (!oidcIssuer || !oidcAudience) throw new Error("AEGIS-API-015 OIDC_CONFIGURATION_INCOMPLETE");
+    return createOidcJwtAuthenticator({
+      issuer: oidcIssuer,
+      audience: oidcAudience,
+      tenantClaim: env.AEGIS_OIDC_TENANT_CLAIM?.trim() || "tenant_id",
+      rolesClaim: env.AEGIS_OIDC_ROLES_CLAIM?.trim() || "roles",
+      fetchImpl: options.fetchImpl,
+      now: options.now,
+    });
+  }
+  return createEnvironmentAuthenticator(env);
 }
 
 function requireTenantBinding(req, principal) {
@@ -180,7 +199,7 @@ export function createApiServer({
 
 const defaultServer = createApiServer({
   executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
-  authenticateRequest: createEnvironmentAuthenticator(),
+  authenticateRequest: createConfiguredAuthenticator(),
 });
 const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
 if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
