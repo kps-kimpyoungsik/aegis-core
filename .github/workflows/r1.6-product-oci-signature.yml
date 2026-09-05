@@ -79,7 +79,7 @@ jobs:
           chmod +x /tmp/cosign
           /tmp/cosign version | tee build/r1.6-oci-signature/cosign-version.txt
 
-      - name: Create isolated CI signing keys
+      - name: Create isolated CI signing keys and offline signing config
         env:
           COSIGN_PASSWORD: aegis-r1-6-ci-only
         run: |
@@ -93,13 +93,22 @@ jobs:
             cd /tmp/aegis-wrong-key
             /tmp/cosign generate-key-pair
           )
+          /tmp/cosign signing-config create \
+            --no-default-fulcio \
+            --no-default-oidc \
+            --no-default-rekor \
+            --no-default-tsa \
+            --out build/r1.6-oci-signature/offline-signing-config.json
           test -s /tmp/aegis-signing-key/cosign.key
           test -s /tmp/aegis-signing-key/cosign.pub
           test -s /tmp/aegis-wrong-key/cosign.pub
+          test -s build/r1.6-oci-signature/offline-signing-config.json
           sha256sum /tmp/aegis-signing-key/cosign.pub \
             | tee build/r1.6-oci-signature/public-key.sha256
           sha256sum /tmp/aegis-wrong-key/cosign.pub \
             | tee build/r1.6-oci-signature/wrong-public-key.sha256
+          sha256sum build/r1.6-oci-signature/offline-signing-config.json \
+            | tee build/r1.6-oci-signature/offline-signing-config.sha256
 
       - name: Sign exact OCI digest
         env:
@@ -109,7 +118,8 @@ jobs:
           IMAGE="$(cat build/r1.6-oci-signature/image-subject.txt)"
           /tmp/cosign sign --yes \
             --allow-http-registry \
-            --tlog-upload=false \
+            --new-bundle-format=true \
+            --signing-config build/r1.6-oci-signature/offline-signing-config.json \
             --key /tmp/aegis-signing-key/cosign.key \
             "${IMAGE}"
           /tmp/cosign download signature --allow-http-registry "${IMAGE}" \
@@ -149,6 +159,7 @@ jobs:
             echo 'production_kms_custody=BLOCKED_BY_ENVIRONMENT'
             echo 'production_registry_signing=BLOCKED_BY_ENVIRONMENT'
             echo 'ci_ephemeral_key_persisted=false'
+            echo 'transparency_log=NOT_APPLICABLE_TO_CI_SELF_MANAGED_KEY_MECHANICS'
             echo "commit=${GITHUB_SHA}"
             echo "repository=${GITHUB_REPOSITORY}"
             echo "runner_os=${RUNNER_OS}"
