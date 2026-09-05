@@ -1,0 +1,78 @@
+{
+  "gate": "R1.8_POSTGRES_BACKUP_RESTORE",
+  "status": "VERIFIED_READY_FOR_INTEGRATION",
+  "scope": "isolated_ci_full_logical_backup_restore",
+  "canonicalOwner": "release-ci-harness",
+  "storageOwnerChanged": false,
+  "rollbackPoint": "main@17742e8e409b5734625d2b187c799b6d0613b0b4",
+  "candidateHead": "2b231d7319514bdb3cec4e0cfb4c304046930ccf",
+  "workflow": {
+    "runId": 33992175506,
+    "jobId": 101376240186,
+    "conclusion": "success",
+    "postgresImage": "postgres:18-alpine",
+    "postgresImageDigestObserved": "sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2",
+    "java": "Temurin 21.0.12+1",
+    "node": "v22.23.2",
+    "npm": "10.9.8"
+  },
+  "verification": {
+    "canonicalProductRegression": "PASS_53_OF_53",
+    "preBackupLivePostgresGate": "PASS_6_OF_6",
+    "databaseDropAndRecreate": "PASS",
+    "customFormatRestore": "PASS",
+    "canonicalLogicalFingerprintMatch": "PASS",
+    "canonicalLogicalSha256": "adb5b592d3bf23a8bb575b484e095d5c46d9f1dd487c2cee050e7f77610838ae",
+    "customBackupSha256": "6b7b814c0c6e138ee8239347ad62e3b1aca1a2cab363574a2c8191fb03e7e298",
+    "restoredRecord": "runtime.execution.snapshot|product-live-postgres-1|1",
+    "postRestoreLivePostgresGate": "PASS_6_OF_6",
+    "corruptBackupRestoreRejection": "PASS"
+  },
+  "timingObservedMs": {
+    "backup": 1771,
+    "restore": 152,
+    "qualification": "EVIDENCE_ONLY_NOT_RPO_RTO_SLO"
+  },
+  "failureHistory": [
+    {
+      "signature": "PG_DUMP_NONDETERMINISTIC_RESTRICT_TOKEN",
+      "runId": 33992089579,
+      "jobId": 101376010930,
+      "artifactId": 9976938809,
+      "artifactSha256": "ba32393030766331432b0d61933a352b7ef20c19acd8a9690bf8097c2c805e54",
+      "classification": "TEST_HARNESS_FINGERPRINT_FAILURE_NOT_RESTORE_FAILURE",
+      "evidence": {
+        "backupRestoreCompleted": true,
+        "preRawPlainDumpSha256": "17875993ab600b86305f64760aaea733e8a6ef83165f591d80ef5fb5ce8e4e42",
+        "postRawPlainDumpSha256": "614c37de950767d80435e17ec6b25ef3381ce277b7c9313b962ebdee9dd821ef",
+        "backupElapsedMsObserved": 1051,
+        "restoreElapsedMsObserved": 180
+      },
+      "correction": "remove PostgreSQL plain-dump \\restrict/\\unrestrict serialization tokens before deterministic logical fingerprint comparison"
+    }
+  ],
+  "evidenceArtifact": {
+    "id": 9976966717,
+    "name": "aegis-r1.8-postgres-backup-restore-evidence",
+    "sha256": "2db7a9895d53dd5d96aff6d48ca8b2bf70d1fb7cec8b091e536d66e36670ca62",
+    "sizeBytes": 3026,
+    "expiresAt": "2026-10-05T21:09:57Z"
+  },
+  "failClosedBoundaries": {
+    "rpoSlo": "NOT_CLAIMED",
+    "rtoSlo": "NOT_CLAIMED",
+    "pitr": "NOT_EXECUTED",
+    "cloudSnapshotRestore": "NOT_EXECUTED",
+    "crossRegionDisasterRecovery": "NOT_EXECUTED",
+    "productionKmsCustody": "BLOCKED_BY_ENVIRONMENT",
+    "productionRegistrySigning": "BLOCKED_BY_ENVIRONMENT",
+    "productionGa": "BLOCKED"
+  },
+  "provenance": {
+    "before": "no physical commercial release backup/restore qualification evidence",
+    "change": "reuse R1.0 canonical PostgreSQL integration state and perform destructive isolated CI dump/drop/recreate/restore/compare/negative-corruption verification",
+    "after": "restored PostgreSQL state matches canonicalized logical fingerprint and existing live storage behavior remains executable",
+    "compare": "candidate adds reversible recovery evidence without adding or moving Storage/Data Plane ownership",
+    "rollback": "remove R1.8 workflow/evidence and return to main@17742e8e409b5734625d2b187c799b6d0613b0b4"
+  }
+}
