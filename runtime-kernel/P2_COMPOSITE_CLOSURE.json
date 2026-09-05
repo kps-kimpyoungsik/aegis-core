@@ -1,6 +1,6 @@
 {
   "phase": "P2 Runtime Kernel",
-  "status": "COMMERCIAL_CLOSED_PENDING_INTEGRATION",
+  "status": "COMMERCIAL_CLOSED",
   "canonical_owner": "aegis.work-runtime",
   "verified_physical_gates": {
     "P2-01_execution_context_state_machine": "VERIFIED_INTEGRATED",
@@ -15,8 +15,11 @@
   "recorded_but_not_physically_verified_in_canonical_repo": {},
   "composite_evidence": {
     "source_base_main": "a6e48606961ee9c7b50d37090171d207af6ef19c",
-    "workflow_run": 33936460877,
-    "workflow_job": 101225242756,
+    "branch_workflow_run": 33936460877,
+    "branch_workflow_job": 101225242756,
+    "merge_ref_workflow_run": 33936542988,
+    "merge_ref_workflow_job": 101225478765,
+    "tested_merge_ref": "74604751ef854363179517a9a76af021ed12e954",
     "java": "Temurin 21.0.12+1",
     "assertions": {
       "P2-01_execution_state": "16/16",
@@ -30,11 +33,14 @@
     "evidence_count_guard": "PASS",
     "dependency": "java.base only",
     "jar": "aegis-runtime-kernel-0.8.0.jar",
-    "jar_sha256": "3ba10d7cf0a62513158b9880719e47c947bc7ad96b4ee47e046e5fd9e995a8d9",
-    "artifact_id": 9960330947,
-    "artifact_zip_sha256": "f6788fefd13eda0813fb0e030bd0dec0044a8b478bae59ebf31bb7370e2cef71"
+    "branch_jar_sha256": "3ba10d7cf0a62513158b9880719e47c947bc7ad96b4ee47e046e5fd9e995a8d9",
+    "branch_artifact_id": 9960330947,
+    "branch_artifact_zip_sha256": "f6788fefd13eda0813fb0e030bd0dec0044a8b478bae59ebf31bb7370e2cef71",
+    "merge_ref_jar_sha256": "48074dd37c2057d99dc5273305c301cd2b63efab4e8cf65b9b9df1ba05300960",
+    "merge_ref_artifact_id": 9960359615,
+    "merge_ref_artifact_zip_sha256": "cf2a97fa8b36b7ea0d2080306bb62a87fdc329bbaec3df94f68f5589eacf910f"
   },
-  "closure_rule": "Composite regression passed on a canonical-main-derived tree. Merge this evidence-only closure delta and verify the final main closure manifest before declaring COMMERCIAL_CLOSED.",
+  "closure_rule": "P2-01 through P2-08 have physical canonical source and full composite regression. Promotion is valid only if the PR head containing this manifest also passes the full merge-ref Runtime Kernel workflow and is merged without code changes.",
   "failure_signatures": [
     {
       "id": "TEST_EVIDENCE_DECLARED_COUNT_DRIFT",
@@ -74,6 +80,6 @@
     "framework_dependency": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Merge commercial closure evidence to main, verify final main manifest, then advance to earliest unfinished commercial gate",
+  "next_pointer": "P3 Portable Brain physical commercial implementation gate",
   "rollback_point": "main@a6e48606961ee9c7b50d37090171d207af6ef19c"
 }
