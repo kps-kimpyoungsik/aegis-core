@@ -9,12 +9,16 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   product-supply-chain:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -105,17 +109,63 @@ jobs:
             "sbom_tool": "anchore/syft:v1.42.3",
             "scanner": "aquasec/trivy:0.72.0",
             "signature_status": "NOT_EXECUTED",
-            "note": "Unsigned provenance evidence only; signature/key-custody remains owned by the canonical authority/signature boundary."
+            "note": "Unsigned provenance evidence retained for compatibility; signed attestations are verified separately by the R1.4 extension."
           }
           EOF
           python3 -m json.tool build/r1.3-supply-chain/provenance.json >/dev/null
           sha256sum build/r1.3-supply-chain/provenance.json | tee build/r1.3-supply-chain/provenance.sha256
           printf 'R1_3_PRODUCT_SUPPLY_CHAIN=PASS\n' > build/r1.3-supply-chain/gate-status.txt
 
+      - name: Materialize attestation subject
+        run: |
+          set -euo pipefail
+          docker save aegis-product:r1.3-candidate | gzip -n > build/r1.3-supply-chain/aegis-product-r1.4.tar.gz
+          sha256sum build/r1.3-supply-chain/aegis-product-r1.4.tar.gz \
+            | tee build/r1.3-supply-chain/attestation-subject.sha256
+
+      - name: Attest build provenance
+        uses: actions/attest@v4.2.1
+        with:
+          subject-path: build/r1.3-supply-chain/aegis-product-r1.4.tar.gz
+
+      - name: Attest SBOM
+        uses: actions/attest@v4.2.1
+        with:
+          subject-path: build/r1.3-supply-chain/aegis-product-r1.4.tar.gz
+          sbom-path: build/r1.3-supply-chain/sbom.cdx.json
+
+      - name: Verify signed attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh attestation verify build/r1.3-supply-chain/aegis-product-r1.4.tar.gz \
+            -R "${GITHUB_REPOSITORY}" --format json \
+            > build/r1.3-supply-chain/provenance-attestation-verification.json
+          gh attestation verify build/r1.3-supply-chain/aegis-product-r1.4.tar.gz \
+            -R "${GITHUB_REPOSITORY}" \
+            --predicate-type https://cyclonedx.org/bom \
+            --format json \
+            > build/r1.3-supply-chain/sbom-attestation-verification.json
+          test -s build/r1.3-supply-chain/provenance-attestation-verification.json
+          test -s build/r1.3-supply-chain/sbom-attestation-verification.json
+          printf 'R1_4_SIGNED_ATTESTATION=PASS\n' > build/r1.3-supply-chain/signed-attestation-status.txt
+
       - name: Upload supply-chain evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: aegis-r1.3-product-supply-chain
-          path: build/r1.3-supply-chain/**
+          path: |
+            build/r1.3-supply-chain/image-id.txt
+            build/r1.3-supply-chain/sbom.cdx.json
+            build/r1.3-supply-chain/sbom.sha256
+            build/r1.3-supply-chain/trivy.json
+            build/r1.3-supply-chain/provenance.json
+            build/r1.3-supply-chain/provenance.sha256
+            build/r1.3-supply-chain/gate-status.txt
+            build/r1.3-supply-chain/attestation-subject.sha256
+            build/r1.3-supply-chain/provenance-attestation-verification.json
+            build/r1.3-supply-chain/sbom-attestation-verification.json
+            build/r1.3-supply-chain/signed-attestation-status.txt
           if-no-files-found: error
