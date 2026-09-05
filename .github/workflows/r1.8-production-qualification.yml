@@ -1,0 +1,81 @@
+name: R1.8 Production Qualification Evidence
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.8-production-qualification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-qualification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Install from canonical dependency lock
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Re-run canonical product quality gates
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Validate converged release manifest
+        working-directory: product
+        run: npm run check:release
+
+      - name: Evaluate fail-closed GA and public-open qualification
+        working-directory: product
+        run: |
+          set -euo pipefail
+          mkdir -p ../build/r1.8-production-qualification
+          node tools/production-qualification-gate.mjs \
+            | tee ../build/r1.8-production-qualification/decision.json
+          node -e "const d=require('../build/r1.8-production-qualification/decision.json'); if(d.gaDecision!=='NOT_PROMOTED'||d.publicOpenDecision!=='PUBLIC_OPEN_BLOCKED'||d.productionPromoted!==false) process.exit(1)"
+
+      - name: Verify production environment gaps remain explicit
+        run: |
+          set -euo pipefail
+          jq -e '.environmentBoundaries.production_kms_custody == "BLOCKED_BY_ENVIRONMENT"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.production_registry_signing == "BLOCKED_BY_ENVIRONMENT"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.cloud_kubernetes_traffic_cutover == "BLOCKED_BY_ENVIRONMENT"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.production_backup_restore == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.load_soak == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.penetration_security == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+
+      - name: Record qualification evidence
+        run: |
+          set -euo pipefail
+          cp product/release/r1.8-production-qualification-evidence.json build/r1.8-production-qualification/
+          cp product/release/release-manifest.candidate.json build/r1.8-production-qualification/
+          sha256sum \
+            product/release/r1.8-production-qualification-evidence.json \
+            product/release/release-manifest.candidate.json \
+            product/tools/production-qualification-gate.mjs \
+            > build/r1.8-production-qualification/source-sha256.txt
+          printf 'R1_8_PRODUCTION_QUALIFICATION_EVIDENCE=PASS\nPRODUCTION_GA=NOT_PROMOTED\nPUBLIC_OPEN=BLOCKED\n' \
+            > build/r1.8-production-qualification/gate-status.txt
+
+      - name: Upload qualification evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.8-production-qualification-evidence
+          path: build/r1.8-production-qualification/**
+          if-no-files-found: error
+          retention-days: 30
