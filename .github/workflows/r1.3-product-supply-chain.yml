@@ -9,12 +9,16 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   product-supply-chain:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -105,17 +109,119 @@ jobs:
             "sbom_tool": "anchore/syft:v1.42.3",
             "scanner": "aquasec/trivy:0.72.0",
             "signature_status": "NOT_EXECUTED",
-            "note": "Unsigned provenance evidence only; signature/key-custody remains owned by the canonical authority/signature boundary."
+            "note": "Unsigned provenance evidence retained for R1.3 compatibility; R1.5 signed attestations are verified separately."
           }
           EOF
           python3 -m json.tool build/r1.3-supply-chain/provenance.json >/dev/null
           sha256sum build/r1.3-supply-chain/provenance.json | tee build/r1.3-supply-chain/provenance.sha256
           printf 'R1_3_PRODUCT_SUPPLY_CHAIN=PASS\n' > build/r1.3-supply-chain/gate-status.txt
 
+      - name: Materialize exact attestation subject
+        run: |
+          set -euo pipefail
+          docker save aegis-product:r1.3-candidate | gzip -n > build/r1.3-supply-chain/aegis-product-r1.5.tar.gz
+          sha256sum build/r1.3-supply-chain/aegis-product-r1.5.tar.gz \
+            | tee build/r1.3-supply-chain/attestation-subject.sha256
+
+      - name: Attest build provenance
+        id: attest-provenance
+        uses: actions/attest@v4.2.1
+        with:
+          subject-path: build/r1.3-supply-chain/aegis-product-r1.5.tar.gz
+
+      - name: Attest CycloneDX SBOM
+        id: attest-sbom
+        uses: actions/attest@v4.2.1
+        with:
+          subject-path: build/r1.3-supply-chain/aegis-product-r1.5.tar.gz
+          sbom-path: build/r1.3-supply-chain/sbom.cdx.json
+
+      - name: Install pinned GitHub CLI attestation verifier
+        run: |
+          set -euo pipefail
+          GH_VERSION='2.98.0'
+          GH_ARCHIVE="gh_${GH_VERSION}_linux_amd64.tar.gz"
+          GH_SHA256='3b8ac6b30336802fc1a858d7c084e11cdf24ac1a761ca90b68022d7d729208de'
+          curl --fail --silent --show-error --location \
+            "https://github.com/cli/cli/releases/download/v${GH_VERSION}/${GH_ARCHIVE}" \
+            --output "/tmp/${GH_ARCHIVE}"
+          printf '%s  %s\n' "${GH_SHA256}" "/tmp/${GH_ARCHIVE}" | sha256sum --check --strict
+          tar -xzf "/tmp/${GH_ARCHIVE}" -C /tmp
+          /tmp/gh_2.98.0_linux_amd64/bin/gh --version \
+            | tee build/r1.3-supply-chain/gh-verifier-version.txt
+
+      - name: Bootstrap immutable Sigstore Public Good trusted root
+        run: |
+          set -euo pipefail
+          ROOT_COMMIT='1717f04f0aef3403c58fd1e9c807b87a1cde579f'
+          ROOT_BLOB='effb0a19e6a0b3f69b3f0a2c72b5c2a02a0ddeea'
+          ROOT_URL="https://raw.githubusercontent.com/sigstore/root-signing/${ROOT_COMMIT}/targets/trusted_root.json"
+          curl --fail --silent --show-error --location "${ROOT_URL}" \
+            --output /tmp/sigstore-trusted-root.json
+          actual_blob="$(git hash-object /tmp/sigstore-trusted-root.json)"
+          test "${actual_blob}" = "${ROOT_BLOB}"
+          jq -c . /tmp/sigstore-trusted-root.json \
+            > build/r1.3-supply-chain/sigstore-public-good-trusted-root.jsonl
+          test -s build/r1.3-supply-chain/sigstore-public-good-trusted-root.jsonl
+          sha256sum build/r1.3-supply-chain/sigstore-public-good-trusted-root.jsonl \
+            | tee build/r1.3-supply-chain/sigstore-public-good-trusted-root.sha256
+          printf 'sigstore_root_commit=%s\nsigstore_root_blob=%s\n' "${ROOT_COMMIT}" "${ROOT_BLOB}" \
+            > build/r1.3-supply-chain/sigstore-public-good-trusted-root-source.txt
+
+      - name: Preserve generated attestation bundles
+        run: |
+          set -euo pipefail
+          cp '${{ steps.attest-provenance.outputs.bundle-path }}' \
+            build/r1.3-supply-chain/provenance-attestation-bundle.json
+          cp '${{ steps.attest-sbom.outputs.bundle-path }}' \
+            build/r1.3-supply-chain/sbom-attestation-bundle.json
+          test -s build/r1.3-supply-chain/provenance-attestation-bundle.json
+          test -s build/r1.3-supply-chain/sbom-attestation-bundle.json
+
+      - name: Verify signed attestations with explicit trusted root
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          GH_BIN='/tmp/gh_2.98.0_linux_amd64/bin/gh'
+          ROOT='build/r1.3-supply-chain/sigstore-public-good-trusted-root.jsonl'
+          "${GH_BIN}" attestation verify build/r1.3-supply-chain/aegis-product-r1.5.tar.gz \
+            -R "${GITHUB_REPOSITORY}" \
+            --custom-trusted-root "${ROOT}" \
+            --format json \
+            > build/r1.3-supply-chain/provenance-attestation-verification.json
+          "${GH_BIN}" attestation verify build/r1.3-supply-chain/aegis-product-r1.5.tar.gz \
+            -R "${GITHUB_REPOSITORY}" \
+            --custom-trusted-root "${ROOT}" \
+            --predicate-type https://cyclonedx.org/bom \
+            --format json \
+            > build/r1.3-supply-chain/sbom-attestation-verification.json
+          test -s build/r1.3-supply-chain/provenance-attestation-verification.json
+          test -s build/r1.3-supply-chain/sbom-attestation-verification.json
+          printf 'R1_5_SIGNED_ATTESTATION=PASS\n' > build/r1.3-supply-chain/signed-attestation-status.txt
+
       - name: Upload supply-chain evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: aegis-r1.3-product-supply-chain
-          path: build/r1.3-supply-chain/**
+          name: aegis-r1.5-product-signed-attestation
+          path: |
+            build/r1.3-supply-chain/image-id.txt
+            build/r1.3-supply-chain/sbom.cdx.json
+            build/r1.3-supply-chain/sbom.sha256
+            build/r1.3-supply-chain/trivy.json
+            build/r1.3-supply-chain/provenance.json
+            build/r1.3-supply-chain/provenance.sha256
+            build/r1.3-supply-chain/gate-status.txt
+            build/r1.3-supply-chain/attestation-subject.sha256
+            build/r1.3-supply-chain/gh-verifier-version.txt
+            build/r1.3-supply-chain/sigstore-public-good-trusted-root.jsonl
+            build/r1.3-supply-chain/sigstore-public-good-trusted-root.sha256
+            build/r1.3-supply-chain/sigstore-public-good-trusted-root-source.txt
+            build/r1.3-supply-chain/provenance-attestation-bundle.json
+            build/r1.3-supply-chain/sbom-attestation-bundle.json
+            build/r1.3-supply-chain/provenance-attestation-verification.json
+            build/r1.3-supply-chain/sbom-attestation-verification.json
+            build/r1.3-supply-chain/signed-attestation-status.txt
           if-no-files-found: error
+          retention-days: 30
