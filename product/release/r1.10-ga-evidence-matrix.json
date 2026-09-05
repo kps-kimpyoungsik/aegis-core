@@ -1,0 +1,38 @@
+{
+  "releaseId": "aegis-r1.10-ga-evidence-convergence",
+  "baseline": "main@a5ee8139bcf35d05d1d5c496693f33d45a86f96f",
+  "gates": {
+    "G0_SOURCE_ARCHITECTURE": "PASS",
+    "G1_CLEAN_BUILD": "PASS",
+    "G2_ARTIFACT_SUPPLY_CHAIN": "PASS",
+    "G3_SECURITY": "NOT_EXECUTED",
+    "G4_DATA_SAFETY": "NOT_EXECUTED",
+    "G5_STAGING": "PASS",
+    "G6_RELIABILITY_PERFORMANCE": "PASS",
+    "G7_ROLLBACK": "PASS",
+    "G8_PRODUCTION_APPROVAL": "NOT_EXECUTED"
+  },
+  "decision": "NOT_PROMOTED",
+  "missing": [
+    "G3_SECURITY",
+    "G4_DATA_SAFETY",
+    "G8_PRODUCTION_APPROVAL"
+  ],
+  "evidence": {
+    "G0_SOURCE_ARCHITECTURE": ["product-convergence", "ownership/architecture/boundary/duplicate gates"],
+    "G1_CLEAN_BUILD": ["canonical package-lock", "npm ci", "lint", "release typecheck", "React production build"],
+    "G2_ARTIFACT_SUPPLY_CHAIN": ["CycloneDX SBOM + vulnerability scan", "signed provenance/SBOM attestations", "OCI signature boundary"],
+    "G5_STAGING": ["local production-like staging rollout/rollback drill"],
+    "G6_RELIABILITY_PERFORMANCE": ["bounded CI load/soak reliability evidence"],
+    "G7_ROLLBACK": ["immutable container rollback drill"],
+    "R1_9_API_BOUNDARY": ["64 KiB JSON body limit", "415 content-type enforcement", "413 oversized payload rejection", "400 malformed JSON rejection", "500 error-detail suppression", "no-store/nosniff headers"]
+  },
+  "boundaryNotes": {
+    "G3_SECURITY": "R1.9 HTTP input/error-disclosure hardening is PASS, but customer-grade authentication/OIDC/RBAC, rate limiting/WAF and external penetration/security qualification are not yet executed.",
+    "G4_DATA_SAFETY": "Live PostgreSQL E2E and recovery semantics are proven, but production backup/restore qualification is not yet executed.",
+    "G5_STAGING": "PASS is limited to the executed local production-like staging mechanism; cloud/Kubernetes traffic cutover remains unqualified.",
+    "G6_RELIABILITY_PERFORMANCE": "PASS is limited to the executed bounded CI load/soak gate; no production SLO or capacity claim is made.",
+    "G7_ROLLBACK": "PASS is limited to immutable container rollback evidence; production deployment rollback remains unqualified.",
+    "G8_PRODUCTION_APPROVAL": "Explicit human production/public-open approval has not been executed."
+  }
+}
