@@ -38,3 +38,44 @@ test("runtime snapshot is a read-only projection endpoint", async () => {
     assert.equal(body.events[0].type,"TASK_RUNNING");
   });
 });
+
+test("task command rejects non-JSON content type before application execution", async () => {
+  let calls=0;
+  await withServer({ executeTask: async()=>{calls+=1;return{};} }, async (base) => {
+    const response = await fetch(`${base}/v1/tasks`, { method:"POST", headers:{"content-type":"text/plain"}, body:"{}" });
+    assert.equal(response.status, 415);
+    assert.deepEqual(await response.json(), { code:"AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED" });
+    assert.equal(calls, 0);
+  });
+});
+
+test("malformed JSON is rejected as a client error", async () => {
+  let calls=0;
+  await withServer({ executeTask: async()=>{calls+=1;return{};} }, async (base) => {
+    const response = await fetch(`${base}/v1/tasks`, { method:"POST", headers:{"content-type":"application/json; charset=utf-8"}, body:'{"goal":' });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { code:"AEGIS-API-005 MALFORMED_JSON" });
+    assert.equal(calls, 0);
+  });
+});
+
+test("oversized JSON is rejected before application execution", async () => {
+  let calls=0;
+  await withServer({ executeTask: async()=>{calls+=1;return{};} }, async (base) => {
+    const body = JSON.stringify({ goal:"x".repeat(70 * 1024), owner:"ops", responsibility:"application-runtime" });
+    const response = await fetch(`${base}/v1/tasks`, { method:"POST", headers:{"content-type":"application/json"}, body });
+    assert.equal(response.status, 413);
+    assert.deepEqual(await response.json(), { code:"AEGIS-API-004 PAYLOAD_TOO_LARGE" });
+    assert.equal(calls, 0);
+  });
+});
+
+test("internal execution errors do not expose exception details", async () => {
+  await withServer({ executeTask: async()=>{throw new Error("database password=do-not-leak");} }, async (base) => {
+    const response = await fetch(`${base}/v1/tasks`, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({goal:"fail safely",owner:"ops",responsibility:"application-runtime"}) });
+    assert.equal(response.status, 500);
+    const body = await response.json();
+    assert.deepEqual(body, { code:"AEGIS-API-500 INTERNAL_ERROR" });
+    assert.equal(JSON.stringify(body).includes("do-not-leak"), false);
+  });
+});
