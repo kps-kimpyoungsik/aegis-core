@@ -40,10 +40,11 @@ run_and_verify_count() {
 
 run_and_verify_count aegis.brain.memory.MemoryKernelTest memory-kernel-count.txt
 run_and_verify_count aegis.brain.knowledge.KnowledgeKernelTest knowledge-kernel-count.txt
+run_and_verify_count aegis.brain.skill.SkillAssetKernelTest skill-asset-kernel-count.txt
 
 echo "TEST_EVIDENCE_COUNT_GUARD=PASS" | tee "$EVIDENCE/evidence-count-guard.txt"
 
-JAR="$DIST/aegis-portable-brain-0.2.0.jar"
+JAR="$DIST/aegis-portable-brain-0.3.0.jar"
 jar --create --file "$JAR" -C "$CLASSES" .
 jdeps "$JAR" | tee "$EVIDENCE/jdeps.txt"
 sha256sum "$JAR" | tee "$EVIDENCE/sha256.txt"
