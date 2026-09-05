@@ -1,0 +1,52 @@
+name: product-convergence
+
+on:
+  pull_request:
+    paths:
+      - "product/**"
+      - ".github/workflows/product-convergence.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "product/**"
+      - ".github/workflows/product-convergence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: product
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install workspace
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Canonical deterministic verification
+        run: npm run verify:deterministic
+
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: product
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install workspace
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Release-surface strict typecheck
+        run: npm run typecheck:release
+      - name: React SPA production build
+        run: npm run build:web

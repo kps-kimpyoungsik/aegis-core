@@ -14,11 +14,13 @@
     "check:strict-config": "node tools/strict-config-check.mjs",
     "check:release": "node tools/release-manifest-check.mjs",
     "typecheck": "tsc -p tsconfig.json",
+    "typecheck:release": "tsc -p tsconfig.release.json",
     "lint": "eslint .",
     "build:web": "npm run build --workspace=aegis-web-console",
     "test": "node --test tests/*.test.mjs",
     "verify:deterministic": "npm run check:ownership && npm run check:contracts && npm run check:architecture && npm run check:boundaries && npm run check:duplicates && npm run check:versions && npm run check:strict-config && npm run check:release && npm test",
-    "verify": "npm run verify:deterministic",
+    "verify:quality": "npm run lint && npm run typecheck:release && npm run build:web",
+    "verify": "npm run verify:deterministic && npm run verify:quality",
     "test:storage": "node --test tests/storage-runtime.test.mjs",
     "verify:storage": "npm run check:ownership && npm run check:boundaries && npm run check:versions && npm run test:storage",
     "test:harness": "node --test tests/harness-runtime.test.mjs",
@@ -29,5 +31,9 @@
     "test:api-runtime": "node --test tests/api-runtime.test.mjs",
     "test:worker-daemon": "node --test tests/worker-daemon.test.mjs",
     "test:web-projection": "node --test tests/web-projection.test.mjs"
+  },
+  "devDependencies": {
+    "eslint": "^10.9.1",
+    "typescript": "^5.0.0"
   }
 }
