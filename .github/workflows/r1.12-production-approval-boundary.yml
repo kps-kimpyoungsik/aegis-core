@@ -1,0 +1,84 @@
+name: R1.12 Production Approval Boundary
+
+on:
+  pull_request:
+    paths:
+      - 'product/packages/release-convergence/**'
+      - 'product/tests/production-approval.test.mjs'
+      - 'product/release/r1.12-production-approval-boundary.json'
+      - '.github/workflows/r1.12-production-approval-boundary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-approval-boundary:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Verify protected production approval boundary
+        working-directory: product
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { evaluateProductionApprovalEnvelope } from '@aegis/release-convergence';
+
+          const boundary = JSON.parse(fs.readFileSync('release/r1.12-production-approval-boundary.json', 'utf8'));
+          if (boundary.approvalStatus !== 'NOT_EXECUTED') throw new Error('G8 approval must remain NOT_EXECUTED');
+          if (boundary.decision !== 'PRODUCTION_NOT_APPROVED') throw new Error('candidate must remain fail-closed');
+
+          const candidate = {
+            revision: process.env.GITHUB_SHA,
+            digest: 'sha256:ci-boundary-fixture-not-production-artifact',
+            now: '2026-09-06T00:00:00Z',
+          };
+          const denied = evaluateProductionApprovalEnvelope({}, candidate, () => true);
+          if (denied.passed || denied.decision !== 'PRODUCTION_NOT_APPROVED') {
+            throw new Error('empty approval envelope did not fail closed');
+          }
+          NODE
+
+      - name: Record boundary evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.12-production-approval-boundary
+          {
+            echo 'R1_12_PRODUCTION_APPROVAL_BOUNDARY=PASS'
+            echo 'G8_PRODUCTION_APPROVAL=NOT_EXECUTED'
+            echo 'PRODUCTION_DECISION=PRODUCTION_NOT_APPROVED'
+            echo 'approval_generation=EXTERNAL_ONLY'
+            echo 'independent_verifier=CONSUMED_NOT_OWNED'
+            echo "commit=${GITHUB_SHA}"
+          } > build/r1.12-production-approval-boundary/evidence.txt
+          sha256sum \
+            product/packages/release-convergence/production-approval.js \
+            product/tests/production-approval.test.mjs \
+            product/release/r1.12-production-approval-boundary.json \
+            .github/workflows/r1.12-production-approval-boundary.yml \
+            > build/r1.12-production-approval-boundary/checksums.sha256
+
+      - name: Upload boundary evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.12-production-approval-boundary
+          path: build/r1.12-production-approval-boundary/**
+          if-no-files-found: error
