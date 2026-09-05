@@ -8,17 +8,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   dependency-reproducibility:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node 22
         uses: actions/setup-node@v7
@@ -26,33 +25,23 @@ jobs:
           node-version: '22'
           package-manager-cache: false
 
-      - name: Regenerate canonical lock from current manifests
+      - name: Verify committed lock is canonical and stable
         working-directory: product
         run: |
           set -euo pipefail
-          cp package-lock.json /tmp/package-lock.before.json 2>/dev/null || true
+          test -s package-lock.json
+          cp package-lock.json /tmp/package-lock.committed.json
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.committed
           rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          test -s package-lock.json
           sha256sum package-lock.json | tee /tmp/package-lock.sha256.first
+          cmp /tmp/package-lock.committed.json package-lock.json
           cp package-lock.json /tmp/package-lock.first.json
           rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           sha256sum package-lock.json | tee /tmp/package-lock.sha256.second
           cmp /tmp/package-lock.first.json package-lock.json
-
-      - name: Commit normalized lock if branch differs
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- product/package-lock.json; then
-            echo 'LOCK_ALREADY_CANONICAL=true'
-            exit 0
-          fi
-          git config user.name 'aegis-release-bot'
-          git config user.email 'aegis-release-bot@users.noreply.github.com'
-          git add product/package-lock.json
-          git commit -m 'R1.7 normalize canonical dependency lock'
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
+          cmp /tmp/package-lock.committed.json package-lock.json
 
       - name: Prove clean npm ci and product quality gates
         working-directory: product
@@ -65,13 +54,30 @@ jobs:
           npm run typecheck:release
           npm run build:web
 
+      - name: Reject unlocked install paths in release surfaces
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'npm install( |$)' \
+            .github/workflows/product-convergence.yml \
+            .github/workflows/r1.0-product-live-postgres-e2e.yml \
+            .github/workflows/r1.1-product-recovery-interruption.yml \
+            .github/workflows/r1.2-product-container-smoke.yml \
+            .github/workflows/r1.3-product-supply-chain.yml \
+            .github/workflows/r1.4-product-staging-rollback.yml \
+            .github/workflows/r1.6-product-oci-signature.yml \
+            product/Dockerfile; then
+            echo 'Unlocked npm install path detected in canonical release surface' >&2
+            exit 1
+          fi
+
       - name: Record reproducibility evidence
         run: |
           set -euo pipefail
           mkdir -p build/r1.7-dependency-reproducibility
+          cp /tmp/package-lock.sha256.committed build/r1.7-dependency-reproducibility/
           cp /tmp/package-lock.sha256.first build/r1.7-dependency-reproducibility/
           cp /tmp/package-lock.sha256.second build/r1.7-dependency-reproducibility/
-          sha256sum product/package.json product/package-lock.json > build/r1.7-dependency-reproducibility/source-sha256.txt
+          sha256sum product/package.json product/package-lock.json product/Dockerfile > build/r1.7-dependency-reproducibility/source-sha256.txt
           printf 'R1_7_DEPENDENCY_REPRODUCIBILITY=PASS\n' > build/r1.7-dependency-reproducibility/gate-status.txt
 
       - name: Upload reproducibility evidence
