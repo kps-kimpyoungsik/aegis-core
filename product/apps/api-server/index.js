@@ -1,7 +1,9 @@
 import http from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { createTask } from "@aegis/core-domain";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
+const MIN_BEARER_TOKEN_BYTES = 32;
 const TASK_EXECUTOR_ROLE = "TASK_EXECUTOR";
 const RUNTIME_VIEWER_ROLE = "RUNTIME_VIEWER";
 
@@ -75,6 +77,35 @@ function validatePrincipal(principal) {
   return Object.freeze({ id: principal.id, roles: Object.freeze([...new Set(principal.roles)]) });
 }
 
+function parseRoles(value) {
+  if (typeof value !== "string") return [];
+  return [...new Set(value.split(",").map((role) => role.trim()).filter(Boolean))];
+}
+
+function createEnvironmentAuthenticator(env = process.env) {
+  const token = env.AEGIS_API_BEARER_TOKEN;
+  if (!token) return async () => null;
+
+  const tokenBytes = Buffer.from(token, "utf8");
+  if (tokenBytes.length < MIN_BEARER_TOKEN_BYTES) throw new Error("AEGIS-API-009 BEARER_TOKEN_TOO_SHORT");
+
+  const principalId = env.AEGIS_API_PRINCIPAL_ID?.trim();
+  if (!principalId) throw new Error("AEGIS-API-010 PRINCIPAL_ID_REQUIRED");
+
+  const roles = parseRoles(env.AEGIS_API_ROLES);
+  if (roles.length === 0) throw new Error("AEGIS-API-011 PRINCIPAL_ROLES_REQUIRED");
+
+  const expected = Buffer.from(`Bearer ${token}`, "utf8");
+  const principal = Object.freeze({ id: principalId, roles: Object.freeze(roles) });
+  return async (req) => {
+    const authorization = req.headers.authorization;
+    if (typeof authorization !== "string") return null;
+    const supplied = Buffer.from(authorization, "utf8");
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+    return principal;
+  };
+}
+
 async function requirePrincipal(req, authenticateRequest, allowedRoles) {
   const principal = validatePrincipal(await authenticateRequest(req));
   if (!principal) throw new ApiAuthorizationError(401, "AEGIS-API-006 AUTHENTICATION_REQUIRED");
@@ -130,6 +161,7 @@ export function createApiServer({
 
 const defaultServer = createApiServer({
   executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
+  authenticateRequest: createEnvironmentAuthenticator(),
 });
 const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
 if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
