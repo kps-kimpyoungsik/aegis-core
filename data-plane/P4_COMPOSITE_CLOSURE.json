@@ -5,35 +5,43 @@
   "verified_physical_gates": {
     "P4-01_dataset_registry": "VERIFIED_INTEGRATED",
     "P4-02_record_event_projection_consistency": "VERIFIED_INTEGRATED",
-    "P4-03_migration_retention_backup_restore": "VERIFIED_READY_FOR_INTEGRATION"
+    "P4-03_migration_retention_backup_restore": "VERIFIED_INTEGRATED"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P4-04_live_storage_adapters": "GAP",
+    "P4-04_live_storage_adapters": "CANDIDATE_SESSION_ALIGNED",
     "P4-05_composite_closure": "GAP"
   },
   "p4_03_evidence": {
-    "workflow_run": 33964558104,
-    "workflow_job": 101302256829,
     "registry_regression": "23/23",
     "consistency_regression": "21/21",
     "lifecycle_assertions": "21/21",
     "evidence_count_guard": "PASS",
     "release_package_guard": "PASS",
-    "java": "Temurin 21.0.12+1",
     "dependency": "java.base only",
     "jar": "aegis-data-plane-0.3.0.jar",
-    "jar_sha256": "8b6b61f2f334b74fc30dd1375eddd9d587caec120e9098ff3a50f82238cb74ba",
-    "artifact_id": 9969000934,
-    "artifact_zip_sha256": "04b59481c82f0fbaba6dbac0f193e2242d0a45e0fcf62799545e3396e691667c"
+    "jar_sha256": "8b6b61f2f334b74fc30dd1375eddd9d587caec120e9098ff3a50f82238cb74ba"
+  },
+  "p4_04_source_alignment": {
+    "decision": "REUSE_ADAPT_COMPOSE_SESSION_P4_5_HARNESS",
+    "postgres_live_contract": [
+      "source+outbox transaction",
+      "optimistic version update",
+      "projection monotonic replay"
+    ],
+    "redis_live_contract": [
+      "cache TTL",
+      "lease acquire/reject/release",
+      "monotonic fencing token"
+    ],
+    "promotion_rule": "actual service-backed CI evidence required"
   },
   "ownership": {
     "dataset_registry_semantics": "aegis.data-plane",
     "record_event_projection_consistency": "aegis.data-plane",
     "migration_retention_backup_restore_semantics": "aegis.data-plane",
+    "live_storage_binding": "adapter/integration only",
     "outbox_and_idempotency_semantics": "REUSE_EXISTING_OWNERS",
-    "dataset_semantic_owner": "declared_per_dataset",
-    "retention_owner": "declared_per_dataset",
-    "migration_owner": "declared_per_dataset"
+    "dataset_semantic_owner": "declared_per_dataset"
   },
   "invariants": [
     "one dataset identity has one canonical definition",
@@ -46,15 +54,15 @@
     "destructive migration requires explicit approval",
     "retention legal hold blocks deletion",
     "restore requires owner, dataset, schema and integrity hash match",
-    "backup and migration preserve provenance",
-    "physical backup transport and database migration execution remain adapter responsibilities"
+    "P4-04 reuses archived P4.5 Record/Event/Projection/Cache/Lease contracts",
+    "P4-04 cannot claim live PASS without PostgreSQL and Redis service-backed evidence",
+    "vendor bindings remain outside data-plane core"
   ],
   "compatibility": {
     "java": "21",
-    "vendor_sdk": "NONE",
-    "framework_dependency": "NONE",
+    "core_vendor_sdk": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Merge P4-03 to canonical main, then P4-04 Live Storage Adapters",
-  "rollback_point": "main@6aad69a3fd14e49a350a9c0331dd5fb275649a6f"
+  "next_pointer": "Run P4-04 live service-backed CI, preserve evidence, then P4-05 composite closure",
+  "rollback_point": "main@c015ce2ab9a69a268a73c83d95a3e34da3b82e4f"
 }
