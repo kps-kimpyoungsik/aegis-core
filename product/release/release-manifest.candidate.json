@@ -1,1 +1,35 @@
-{"releaseId":"aegis-r0.5-portable-brain","status":"CANDIDATE","sourceRevision":"LOCAL_SANDBOX","contracts":"0.1.0","packageBaseline":"0.5.0","validation":{"ownership":"PASS","contracts":"PASS","architecture":"PASS","packageBoundaries":"PASS","duplicateSymbols":"PASS","workspaceVersions":"PASS","strictConfig":"PASS","releaseManifest":"PASS","tests":"PASS","typecheck":"NOT_EXECUTED","lint":"NOT_EXECUTED","reactSource":"CREATED","reactBuild":"NOT_EXECUTED","physicalDb":"NOT_EXECUTED","container":"NOT_EXECUTED","staging":"NOT_EXECUTED","storageReference":"PASS","storageFailureInjection":"PASS","harnessRuntime":"PASS","harnessFailureInjection":"PASS","portableBrain":"PASS","memoryPromotion":"PASS","selectiveRetrieval":"PASS"},"rollbackPoint":"aegis-r0.4-harness-runtime"}
+{
+  "releaseId": "aegis-r0.6-application-runtime",
+  "status": "CANDIDATE",
+  "sourceRevision": "LOCAL_SANDBOX",
+  "contracts": "0.1.0",
+  "packageBaseline": "0.6.0",
+  "validation": {
+    "ownership": "PASS",
+    "contracts": "PASS",
+    "architecture": "PASS",
+    "packageBoundaries": "PASS",
+    "duplicateSymbols": "PASS",
+    "workspaceVersions": "PASS",
+    "strictConfig": "PASS",
+    "releaseManifest": "PASS",
+    "tests": "PASS",
+    "typecheck": "NOT_EXECUTED",
+    "lint": "NOT_EXECUTED",
+    "reactSource": "CREATED",
+    "reactBuild": "NOT_EXECUTED",
+    "physicalDb": "NOT_EXECUTED",
+    "container": "NOT_EXECUTED",
+    "staging": "NOT_EXECUTED",
+    "storageReference": "PASS",
+    "storageFailureInjection": "PASS",
+    "harnessRuntime": "PASS",
+    "harnessFailureInjection": "PASS",
+    "portableBrain": "PASS",
+    "memoryPromotion": "PASS",
+    "selectiveRetrieval": "PASS",
+    "applicationRuntime": "PASS",
+    "applicationLifecycleIntegration": "PASS"
+  },
+  "rollbackPoint": "aegis-r0.5-portable-brain"
+}

@@ -1,5 +1,5 @@
 {
-  "version": "0.5.0",
+  "version": "0.6.0",
   "responsibilities": [
     {"id":"canonical-contracts","owner":"@aegis/contracts","scope":"canonical schemas and protocol contracts"},
     {"id":"core-domain","owner":"@aegis/core-domain","scope":"canonical domain objects and invariants"},
@@ -15,6 +15,7 @@
     {"id":"memory-contracts","owner":"@aegis/memory-contracts","scope":"canonical memory kinds, states and promotion errors"},
     {"id":"memory-runtime","owner":"@aegis/memory-runtime","scope":"working/episode/failure memory lifecycle and staged promotion"},
     {"id":"knowledge-contracts","owner":"@aegis/knowledge-contracts","scope":"canonical knowledge lifecycle and retrieval match contracts"},
-    {"id":"retrieval-runtime","owner":"@aegis/retrieval-runtime","scope":"selective exact/structural/relation/semantic retrieval and point context packaging"}
+    {"id":"retrieval-runtime","owner":"@aegis/retrieval-runtime","scope":"selective exact/structural/relation/semantic retrieval and point context packaging"},
+    {"id":"application-runtime","owner":"@aegis/application-runtime","scope":"task lifecycle integration across ownership, retrieval, harness, validation and memory capture"}
   ]
 }
