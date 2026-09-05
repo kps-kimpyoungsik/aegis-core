@@ -29,7 +29,7 @@ jobs:
         working-directory: product
         run: |
           set -euo pipefail
-          npm install --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
           npm run verify:deterministic
           npm run lint
           npm run typecheck:release
@@ -171,6 +171,7 @@ jobs:
           sha256sum \
             product/Dockerfile \
             product/package.json \
+            product/package-lock.json \
             .github/workflows/r1.6-product-oci-signature.yml \
             > build/r1.6-oci-signature/source-sha256.txt
 
