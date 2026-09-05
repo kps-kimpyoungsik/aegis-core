@@ -4,39 +4,36 @@
   "canonical_owner": "aegis.data-plane",
   "verified_physical_gates": {
     "P4-01_dataset_registry": "VERIFIED_INTEGRATED",
-    "P4-02_record_event_projection_consistency": "VERIFIED_READY_FOR_INTEGRATION"
+    "P4-02_record_event_projection_consistency": "VERIFIED_INTEGRATED",
+    "P4-03_migration_retention_backup_restore": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P4-03_migration_retention_backup_restore": "GAP",
     "P4-04_live_storage_adapters": "GAP",
     "P4-05_composite_closure": "GAP"
   },
-  "p4_01_evidence": {
-    "assertions": "23/23",
-    "status": "VERIFIED_INTEGRATED",
-    "jar": "aegis-data-plane-0.1.0.jar",
-    "jar_sha256": "802384a4d8959cc5e7c6678640a4af6a58342656cac3d0a871e14dfcdce05acd"
-  },
-  "p4_02_evidence": {
-    "workflow_run": 33960748848,
-    "workflow_job": 101292096544,
+  "p4_03_evidence": {
+    "workflow_run": 33964558104,
+    "workflow_job": 101302256829,
     "registry_regression": "23/23",
-    "consistency_assertions": "21/21",
+    "consistency_regression": "21/21",
+    "lifecycle_assertions": "21/21",
     "evidence_count_guard": "PASS",
     "release_package_guard": "PASS",
     "java": "Temurin 21.0.12+1",
     "dependency": "java.base only",
-    "jar": "aegis-data-plane-0.2.0.jar",
-    "jar_sha256": "7e81f853778a9154bd2df6025fa4c0ee71c1c5f601a5f69dc22b1de0a7fa5d97",
-    "artifact_id": 9967847563,
-    "artifact_zip_sha256": "ae05f3f0b95e9e749e38aecd958e8a6723255ea2eee69bdb27972ccc478c847f"
+    "jar": "aegis-data-plane-0.3.0.jar",
+    "jar_sha256": "8b6b61f2f334b74fc30dd1375eddd9d587caec120e9098ff3a50f82238cb74ba",
+    "artifact_id": 9969000934,
+    "artifact_zip_sha256": "04b59481c82f0fbaba6dbac0f193e2242d0a45e0fcf62799545e3396e691667c"
   },
   "ownership": {
     "dataset_registry_semantics": "aegis.data-plane",
     "record_event_projection_consistency": "aegis.data-plane",
+    "migration_retention_backup_restore_semantics": "aegis.data-plane",
     "outbox_and_idempotency_semantics": "REUSE_EXISTING_OWNERS",
     "dataset_semantic_owner": "declared_per_dataset",
-    "source_of_truth": "single_per_logical_dataset"
+    "retention_owner": "declared_per_dataset",
+    "migration_owner": "declared_per_dataset"
   },
   "invariants": [
     "one dataset identity has one canonical definition",
@@ -45,10 +42,12 @@
     "write authority requires canonical owner and write port match",
     "projection cursor accepts only the next ordered event",
     "duplicate applied event is skipped without reapplication",
-    "event gaps and sequence regressions fail closed",
-    "one event identity cannot correlate to different commits",
-    "same transaction record version cannot correlate to multiple event identities",
-    "P4-02 does not implement a duplicate outbox or idempotency framework"
+    "migration requires before evidence, after validation and rollback point",
+    "destructive migration requires explicit approval",
+    "retention legal hold blocks deletion",
+    "restore requires owner, dataset, schema and integrity hash match",
+    "backup and migration preserve provenance",
+    "physical backup transport and database migration execution remain adapter responsibilities"
   ],
   "compatibility": {
     "java": "21",
@@ -56,6 +55,6 @@
     "framework_dependency": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Merge P4-02 to canonical main, then P4-03 Migration/Retention/Backup/Restore",
-  "rollback_point": "main@2e03a1fcdad4761a6fea7f17d060b059e50f17e1"
+  "next_pointer": "Merge P4-03 to canonical main, then P4-04 Live Storage Adapters",
+  "rollback_point": "main@6aad69a3fd14e49a350a9c0331dd5fb275649a6f"
 }
