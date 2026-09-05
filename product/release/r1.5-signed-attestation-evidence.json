@@ -1,0 +1,62 @@
+{
+  "schema": "aegis.release.evidence.r1.5.v1",
+  "workstream": "R1.5 Signed Supply-Chain Attestation",
+  "status": "VERIFIED_READY_FOR_INTEGRATION",
+  "canonical_owner": "release-ci-harness",
+  "rollback_point": "main@c1ab71fb9af487bfcb07a9edd4264bb317e3c346",
+  "candidate_head": "a524e09712ada6dc6b0ce77eab9206a8676e139f",
+  "merge_ref": "9e78025c16eab856c259025606681f3df3e2ae7a",
+  "workflow_run": 33990594418,
+  "workflow_job": 101372004047,
+  "result": "PASS",
+  "product_regression": {
+    "tests": "53/53",
+    "lint": "PASS",
+    "typecheck_release": "PASS",
+    "react_vite_build": "PASS",
+    "ownership_check": "PASS",
+    "contract_check": "PASS",
+    "architecture_check": "PASS",
+    "package_boundary_check": "PASS",
+    "duplicate_check": "PASS",
+    "release_manifest_check": "PASS"
+  },
+  "supply_chain": {
+    "oci_image_id": "sha256:401f3616f11e1dd511998164f881c1e0a564d5ab1d767c82fde15d2a66be19f9",
+    "attestation_subject_sha256": "a48e0587ee15619f86bb6b40d31a666e8c6b11b067d72961e30fc9a6f1036461",
+    "cyclonedx_sbom_sha256": "af1f51631b3e65ddfd724e6df1b7bed12b6a0853b5f4a354582494b4832d800f",
+    "unsigned_provenance_sha256": "754b89edc435e0b36ca3da736a930e731e39f2928b2bd1cc767f187fc7343e0a",
+    "trivy_high_critical": "PASS",
+    "build_provenance_attestation_id": 45492233,
+    "build_provenance_rekor_index": 2730531049,
+    "sbom_attestation_id": 45492235,
+    "sbom_rekor_index": 2730531444,
+    "signed_provenance_verification": "PASS",
+    "signed_sbom_verification": "PASS"
+  },
+  "verifier": {
+    "github_cli_version": "2.98.0",
+    "github_cli_linux_amd64_sha256": "3b8ac6b30336802fc1a858d7c084e11cdf24ac1a761ca90b68022d7d729208de",
+    "sigstore_trusted_root_commit": "1717f04f0aef3403c58fd1e9c807b87a1cde579f",
+    "sigstore_trusted_root_blob": "effb0a19e6a0b3f69b3f0a2c72b5c2a02a0ddeea",
+    "sigstore_trusted_root_jsonl_sha256": "3c2cc7f357dc064ec527fdcd78da6e9245c21a381e1abaa0f2b62b186bcac1a1"
+  },
+  "artifact": {
+    "name": "aegis-r1.5-product-signed-attestation",
+    "id": 9976516245,
+    "sha256": "369669ba56801a9cda68db356a731f3e9288ea2afe1bf8c0a8c925889de86273",
+    "retention_expires_at": "2026-10-05T20:37:14Z"
+  },
+  "failure_learning": {
+    "initial_failure": "no valid Sigstore verifiers could be initialized",
+    "rejected_hypothesis": "runner GitHub CLI version alone caused the verifier failure",
+    "verified_failure_mechanism": "default TUF trust-root bootstrap could not initialize a valid verifier in the hosted runner path",
+    "minimal_causal_fix": "verify immutable Public Good Sigstore trusted root identity and pass it explicitly via --custom-trusted-root"
+  },
+  "boundary_notes": [
+    "GitHub OIDC/Sigstore artifact attestation does not claim production image-signing key custody.",
+    "Root Authority, Independent Verifier, Audit Ledger and production signing policy remain unchanged.",
+    "Production GA remains fail-closed."
+  ],
+  "next_pointer": "Revalidate this evidence-bearing head, then integrate R1.5 only if current main has no equivalent signed-attestation capability."
+}
