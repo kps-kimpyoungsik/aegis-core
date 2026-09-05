@@ -1,4 +1,5 @@
 import http from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { createTask } from "@aegis/core-domain";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -24,6 +25,30 @@ function json(res, status, body) {
 function isJsonContentType(value) {
   if (typeof value !== "string") return false;
   return value.split(";", 1)[0].trim().toLowerCase() === "application/json";
+}
+
+function constantTimeTokenEquals(actual, expected) {
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(expected);
+  if (actualBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
+export function createStaticBearerAuthorizer(expectedToken) {
+  return (req) => {
+    if (typeof expectedToken !== "string" || expectedToken.length < 16) {
+      return { ok: false, status: 503, code: "AEGIS-API-SEC-001 AUTH_NOT_CONFIGURED" };
+    }
+    const authorization = req.headers.authorization;
+    if (typeof authorization !== "string" || !authorization.startsWith("Bearer ")) {
+      return { ok: false, status: 401, code: "AEGIS-API-SEC-002 AUTH_REQUIRED" };
+    }
+    const presented = authorization.slice("Bearer ".length);
+    if (!constantTimeTokenEquals(presented, expectedToken)) {
+      return { ok: false, status: 401, code: "AEGIS-API-SEC-003 INVALID_TOKEN" };
+    }
+    return { ok: true };
+  };
 }
 
 async function readJson(req) {
@@ -56,12 +81,29 @@ async function readJson(req) {
   }
 }
 
-export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID() } = {}) {
+export function createApiServer({
+  executeTask,
+  getSnapshot = () => ({ tasks: [], events: [] }),
+  idFactory = () => crypto.randomUUID(),
+  authorizeRequest = () => ({ ok: true }),
+} = {}) {
   if (typeof executeTask !== "function") throw new Error("AEGIS-API-001 EXECUTE_TASK_REQUIRED");
+  if (typeof authorizeRequest !== "function") throw new Error("AEGIS-API-SEC-004 AUTHORIZER_REQUIRED");
   return http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/health/live") return json(res, 200, { status: "HEALTHY" });
       if (req.method === "GET" && req.url === "/health/ready") return json(res, 200, { status: "READY", contracts: "0.7.0" });
+
+      const isProtectedRoute =
+        (req.method === "GET" && req.url === "/v1/runtime/snapshot") ||
+        (req.method === "POST" && req.url === "/v1/tasks");
+      if (isProtectedRoute) {
+        const decision = await authorizeRequest(req);
+        if (!decision || decision.ok !== true) {
+          return json(res, decision?.status ?? 401, { code: decision?.code ?? "AEGIS-API-SEC-002 AUTH_REQUIRED" });
+        }
+      }
+
       if (req.method === "GET" && req.url === "/v1/runtime/snapshot") return json(res, 200, getSnapshot());
       if (req.method === "POST" && req.url === "/v1/tasks") {
         const body = await readJson(req);
@@ -86,6 +128,7 @@ export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [],
 
 const defaultServer = createApiServer({
   executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
+  authorizeRequest: createStaticBearerAuthorizer(process.env.AEGIS_API_BEARER_TOKEN),
 });
 const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
 if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
