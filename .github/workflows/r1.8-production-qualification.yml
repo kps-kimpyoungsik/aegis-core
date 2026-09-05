@@ -55,7 +55,8 @@ jobs:
           jq -e '.environmentBoundaries.production_registry_signing == "BLOCKED_BY_ENVIRONMENT"' product/release/r1.8-production-qualification-evidence.json >/dev/null
           jq -e '.environmentBoundaries.cloud_kubernetes_traffic_cutover == "BLOCKED_BY_ENVIRONMENT"' product/release/r1.8-production-qualification-evidence.json >/dev/null
           jq -e '.environmentBoundaries.production_backup_restore == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
-          jq -e '.environmentBoundaries.load_soak == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.bounded_ci_load_soak == "PASS"' product/release/r1.8-production-qualification-evidence.json >/dev/null
+          jq -e '.environmentBoundaries.production_scale_load_soak == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
           jq -e '.environmentBoundaries.penetration_security == "NOT_EXECUTED"' product/release/r1.8-production-qualification-evidence.json >/dev/null
 
       - name: Record qualification evidence
