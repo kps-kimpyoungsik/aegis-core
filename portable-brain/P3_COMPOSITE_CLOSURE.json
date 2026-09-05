@@ -3,26 +3,33 @@
   "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
   "canonical_owner": "aegis.portable-brain",
   "verified_physical_gates": {
-    "P3-01_memory_semantic_model": "VERIFIED_READY_FOR_INTEGRATION"
+    "P3-01_memory_semantic_model": "VERIFIED_INTEGRATED",
+    "P3-02_knowledge_lifecycle": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P3-02_knowledge_lifecycle": "GAP",
     "P3-03_skill_asset_registry": "GAP",
     "P3-04_selective_retrieval": "GAP",
     "P3-05_export_import": "GAP",
     "P3-06_composite_closure": "GAP"
   },
   "p3_01_evidence": {
-    "workflow_run": 33949044174,
-    "workflow_job": 101260240040,
     "assertions": "18/18",
     "evidence_count_guard": "PASS",
+    "status": "VERIFIED_INTEGRATED"
+  },
+  "p3_02_evidence": {
+    "workflow_run": 33954680147,
+    "workflow_job": 101275716770,
+    "memory_regression": "18/18",
+    "knowledge_assertions": "22/22",
+    "evidence_count_guard": "PASS",
+    "release_package_guard": "PASS",
     "java": "Temurin 21.0.12+1",
     "dependency": "java.base only",
-    "jar": "aegis-portable-brain-0.1.0.jar",
-    "jar_sha256": "d408d465770fcfbc7fcaf8f145f5682480c67c2c100385c03e8c38d83501b56c",
-    "artifact_id": 9964213184,
-    "artifact_zip_sha256": "f4640d82846bf4c17a6e0b11ec11db9c51ef1ff926789c096c5a16cae6ecb7db"
+    "jar": "aegis-portable-brain-0.2.0.jar",
+    "jar_sha256": "f5ef8ad986691a64b6f2503e8c39d5344885c69b89a8d3bfade56c4a8b06bfd2",
+    "artifact_id": 9965952285,
+    "artifact_zip_sha256": "eadd663e477507028c3d68eeaeafabc21d6282f8b5ea37daa9c0e80aef12a3eb"
   },
   "ownership": {
     "memory_semantics": "aegis.portable-brain",
@@ -36,8 +43,10 @@
     "retracted memory is never retrieved",
     "retracted memory cannot resurrect by ordinary state transition",
     "working memory is not directly promotable",
-    "promotion requires provenance and sufficient confidence",
-    "retrieval is scope isolated and minimum-context bounded",
+    "retracted knowledge is never actively retrieved",
+    "retracted knowledge cannot resurrect through ordinary transition or supersede",
+    "knowledge retrieval is scope isolated, freshness aware and explicitly bounded",
+    "knowledge promotion requires source version, provenance, confidence and applicability",
     "vendor persistence semantics remain outside portable brain"
   ],
   "compatibility": {
@@ -46,6 +55,6 @@
     "framework_dependency": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Merge P3-01 to canonical main, then P3-02 Knowledge Lifecycle",
-  "rollback_point": "main@213cb86370d153cd15754b094fd778b1b2d46c09"
+  "next_pointer": "Merge P3-02 to canonical main, then P3-03 Skill/Asset Registry",
+  "rollback_point": "main@35ec0b5e623289c23596eab219c1b042dc515ccd"
 }
