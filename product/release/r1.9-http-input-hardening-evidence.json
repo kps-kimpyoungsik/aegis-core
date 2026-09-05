@@ -1,0 +1,68 @@
+{
+  "gate": "R1.9_HTTP_INPUT_ERROR_DISCLOSURE_HARDENING",
+  "status": "VERIFIED_READY_FOR_INTEGRATION",
+  "canonicalOwner": "api-adapter",
+  "securityDomainOwnerChanged": false,
+  "rollbackPoint": "main@01386283bbd70252bd9da083be598874017a63a3",
+  "candidateHead": "49deb7c4140dd2a3b4e03cff1c427a118bd97e3c",
+  "hardening": {
+    "maxJsonBodyBytes": 65536,
+    "unsupportedContentType": "415 AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED",
+    "oversizedPayload": "413 AEGIS-API-004 PAYLOAD_TOO_LARGE",
+    "malformedJson": "400 AEGIS-API-005 MALFORMED_JSON",
+    "internalErrorResponse": "500 AEGIS-API-500 INTERNAL_ERROR",
+    "internalExceptionMessageDisclosure": "BLOCKED",
+    "responseHeaders": ["cache-control: no-store", "x-content-type-options: nosniff"]
+  },
+  "deterministicVerification": {
+    "workflowRunId": 33992448057,
+    "jobId": 101376960551,
+    "tests": 57,
+    "passed": 57,
+    "failed": 0,
+    "ownershipCheck": "PASS_21_CANONICAL_RESPONSIBILITIES",
+    "contractCheck": "PASS_3_SCHEMAS",
+    "packageBoundaryCheck": "PASS_20_PACKAGES_APPS",
+    "duplicateCheck": "PASS_50_PUBLIC_SYMBOLS",
+    "releaseManifestCheck": "PASS_32_GATES",
+    "lint": "PASS",
+    "releaseTypecheck": "PASS",
+    "reactSpaBuild": "PASS"
+  },
+  "negativeCases": {
+    "nonJsonContentTypeRejectedBeforeApplication": "PASS",
+    "malformedJsonRejectedAsClientError": "PASS",
+    "oversizedJsonRejectedBeforeApplication": "PASS",
+    "secretBearingInternalExceptionNotDisclosed": "PASS"
+  },
+  "releaseRegression": {
+    "productConvergence": "SUCCESS",
+    "r1_0LivePostgres": "SUCCESS",
+    "r1_1RecoveryInterruption": "SUCCESS",
+    "r1_2ContainerSmoke": "SUCCESS",
+    "r1_3SupplyChain": "SUCCESS",
+    "r1_4StagingRollback": "SUCCESS",
+    "r1_6OciSignature": "SUCCESS",
+    "r1_7DependencyReproducibility": "SUCCESS",
+    "r1_7LoadSoak": "SUCCESS",
+    "r1_8PostgresBackupRestore": "SUCCESS"
+  },
+  "failClosedBoundaries": {
+    "authenticationOidc": "NOT_IMPLEMENTED_BY_THIS_GATE",
+    "rbac": "NOT_IMPLEMENTED_BY_THIS_GATE",
+    "rateLimiting": "NOT_IMPLEMENTED_BY_THIS_GATE",
+    "waf": "NOT_EXECUTED",
+    "externalPenetrationTest": "NOT_EXECUTED",
+    "ddosCapacity": "NOT_EXECUTED",
+    "productionKmsCustody": "BLOCKED_BY_ENVIRONMENT",
+    "productionRegistrySigning": "BLOCKED_BY_ENVIRONMENT",
+    "productionGa": "BLOCKED"
+  },
+  "provenance": {
+    "before": "API task POST accepted unbounded bodies, malformed JSON surfaced as 500, and internal exception messages were returned to clients",
+    "change": "adapt existing API adapter with bounded JSON parsing and deterministic public error mapping; extend existing canonical API tests",
+    "after": "64 KiB bounded JSON ingress, deterministic 400/413/415 client errors, and generic non-disclosing 500 response",
+    "compare": "candidate improves public HTTP boundary security while preserving canonical task, authority, runtime, storage, and React ownership",
+    "rollback": "revert R1.9 API/test/evidence changes and return to main@01386283bbd70252bd9da083be598874017a63a3"
+  }
+}
