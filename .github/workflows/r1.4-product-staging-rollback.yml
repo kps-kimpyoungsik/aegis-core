@@ -1,0 +1,121 @@
+name: R1.4 Product Ephemeral Staging Rollback
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.4-product-staging-rollback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging-rollback:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Resolve rollback baseline
+        id: baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          else
+            BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+          test -n "$BASE_SHA"
+          git cat-file -e "$BASE_SHA^{commit}"
+          echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "$BASE_SHA" | tee /tmp/aegis-r14-baseline-sha.txt
+      - name: Build baseline and candidate images
+        env:
+          BASE_SHA: ${{ steps.baseline.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/aegis-r14-baseline "$BASE_SHA"
+          trap 'git worktree remove --force /tmp/aegis-r14-baseline >/dev/null 2>&1 || true' EXIT
+          docker build --pull --tag aegis-product:r1.4-baseline /tmp/aegis-r14-baseline/product
+          docker build --pull --tag aegis-product:r1.4-candidate ./product
+          docker image inspect aegis-product:r1.4-baseline --format '{{.Id}}' | tee /tmp/aegis-r14-baseline-image-id.txt
+          docker image inspect aegis-product:r1.4-candidate --format '{{.Id}}' | tee /tmp/aegis-r14-candidate-image-id.txt
+      - name: Execute staged promotion and rollback drill
+        shell: bash
+        run: |
+          set -euo pipefail
+          wait_ready() {
+            local port="$1"
+            for attempt in $(seq 1 30); do
+              if node -e "fetch('http://127.0.0.1:'${port}'/health/ready').then(async r=>{const b=await r.json();if(r.status!==200||b.status!=='READY')process.exit(1)}).catch(()=>process.exit(1))"; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
+          wait_live() {
+            local port="$1"
+            node -e "fetch('http://127.0.0.1:'${port}'/health/live').then(async r=>{const b=await r.json();if(r.status!==200||b.status!=='HEALTHY')process.exit(1)}).catch(()=>process.exit(1))"
+          }
+          cleanup() {
+            docker rm -f aegis-r14-baseline aegis-r14-candidate aegis-r14-rollback >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run --detach --name aegis-r14-baseline -p 18084:8080 aegis-product:r1.4-baseline
+          wait_ready 18084
+          wait_live 18084
+          docker inspect aegis-r14-baseline --format '{{json .State.Health}}' > /tmp/aegis-r14-baseline-health.json
+          docker rm -f aegis-r14-baseline >/dev/null
+
+          docker run --detach --name aegis-r14-candidate -p 18084:8080 aegis-product:r1.4-candidate
+          wait_ready 18084
+          wait_live 18084
+          docker inspect aegis-r14-candidate --format '{{json .State.Health}}' > /tmp/aegis-r14-candidate-health.json
+          docker rm -f aegis-r14-candidate >/dev/null
+
+          docker run --detach --name aegis-r14-rollback -p 18084:8080 aegis-product:r1.4-baseline
+          wait_ready 18084
+          wait_live 18084
+          docker inspect aegis-r14-rollback --format '{{json .State.Health}}' > /tmp/aegis-r14-rollback-health.json
+          printf 'BASELINE_DEPLOY=PASS\nCANDIDATE_PROMOTION=PASS\nROLLBACK_TO_BASELINE=PASS\n' | tee /tmp/aegis-r14-gate-status.txt
+      - name: Record rollback evidence
+        if: success()
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.4-staging-rollback-evidence
+          cp /tmp/aegis-r14-baseline-sha.txt build/r1.4-staging-rollback-evidence/baseline-sha.txt
+          cp /tmp/aegis-r14-baseline-image-id.txt build/r1.4-staging-rollback-evidence/baseline-image-id.txt
+          cp /tmp/aegis-r14-candidate-image-id.txt build/r1.4-staging-rollback-evidence/candidate-image-id.txt
+          cp /tmp/aegis-r14-baseline-health.json build/r1.4-staging-rollback-evidence/baseline-health.json
+          cp /tmp/aegis-r14-candidate-health.json build/r1.4-staging-rollback-evidence/candidate-health.json
+          cp /tmp/aegis-r14-rollback-health.json build/r1.4-staging-rollback-evidence/rollback-health.json
+          cp /tmp/aegis-r14-gate-status.txt build/r1.4-staging-rollback-evidence/gate-status.txt
+          cat > build/r1.4-staging-rollback-evidence/scope.txt <<'EOF'
+R1.4 executes an ephemeral GitHub-runner container staging/promotion/rollback drill.
+It does not claim Kubernetes, cloud staging, traffic migration, persistent-volume rollback, or production rollback verification.
+EOF
+          sha256sum build/r1.4-staging-rollback-evidence/* > build/r1.4-staging-rollback-evidence/SHA256SUMS
+      - name: Upload rollback evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.4-staging-rollback-evidence
+          path: build/r1.4-staging-rollback-evidence/**
+          if-no-files-found: error
