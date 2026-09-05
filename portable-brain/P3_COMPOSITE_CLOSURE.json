@@ -1,0 +1,38 @@
+{
+  "phase": "P3 Portable Brain",
+  "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
+  "canonical_owner": "aegis.portable-brain",
+  "verified_physical_gates": {},
+  "recorded_but_not_physically_verified_in_canonical_repo": {
+    "P3-01_memory_semantic_model": "IMPLEMENTING",
+    "P3-02_knowledge_lifecycle": "GAP",
+    "P3-03_skill_asset_registry": "GAP",
+    "P3-04_selective_retrieval": "GAP",
+    "P3-05_export_import": "GAP",
+    "P3-06_composite_closure": "GAP"
+  },
+  "ownership": {
+    "memory_semantics": "aegis.portable-brain",
+    "knowledge_semantics": "aegis.portable-brain",
+    "skill_asset_semantics": "aegis.portable-brain",
+    "persistence_mechanics": "aegis.data-plane",
+    "runtime_execution": "aegis.work-runtime",
+    "promotion_authority": "aegis.governance.freeze"
+  },
+  "invariants": [
+    "retracted memory is never retrieved",
+    "retracted memory cannot resurrect by ordinary state transition",
+    "working memory is not directly promotable",
+    "promotion requires provenance and sufficient confidence",
+    "retrieval is scope isolated and minimum-context bounded",
+    "vendor persistence semantics remain outside portable brain"
+  ],
+  "compatibility": {
+    "java": "21",
+    "vendor_sdk": "NONE",
+    "framework_dependency": "NONE",
+    "hexagonal_boundary": "PRESERVED"
+  },
+  "next_pointer": "P3-01 Memory Semantic Model physical verification",
+  "rollback_point": "main@213cb86370d153cd15754b094fd778b1b2d46c09"
+}
