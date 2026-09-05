@@ -1,0 +1,47 @@
+name: P4 Live Storage Adapters Verify
+
+on:
+  pull_request:
+    paths:
+      - 'storage-adapters/**'
+      - '.github/workflows/p4-live-storage-adapters-verify.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'storage-adapters/**'
+      - '.github/workflows/p4-live-storage-adapters-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify live storage adapter contracts
+        working-directory: storage-adapters
+        run: bash verify.sh
+      - name: Verify release package exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          jars=(storage-adapters/build/dist/aegis-storage-live-adapters-*.jar)
+          if [[ ${#jars[@]} -ne 1 ]]; then
+            echo "RELEASE_PACKAGE_GUARD_FAIL expected=1 actual=${#jars[@]}" >&2
+            exit 41
+          fi
+          echo "RELEASE_PACKAGE_GUARD=PASS jar=${jars[0]}"
+      - name: Upload adapter package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-storage-live-adapters
+          path: |
+            storage-adapters/build/dist/aegis-storage-live-adapters-*.jar
+            storage-adapters/build/evidence/**
+          if-no-files-found: error
