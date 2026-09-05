@@ -1,0 +1,20 @@
+version: 0.2.0-rc2
+owners:
+  contracts: contracts
+  canonical_work: core
+  canonical_task: core
+  canonical_execution: core
+  runtime_kernel: application
+  storage_mechanism: adapters.postgres
+  postgres_schema_execution: adapters.postgres
+  http_transport: server
+  cli_transport: cli
+  react_operational_projection: web
+  deployment: deployment
+rules:
+  - core_must_not_depend_on_adapters
+  - application_must_not_depend_on_adapters
+  - postgres_adapter_does_not_own_domain_meaning
+  - projection_is_not_source_of_truth
+  - canonical_mutation_requires_tenant_scope
+  - required_postgres_unavailable_means_not_ready
