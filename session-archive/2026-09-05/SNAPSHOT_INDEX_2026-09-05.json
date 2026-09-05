@@ -1,0 +1,11 @@
+{
+  "snapshot_id": "AEGIS.ALL_SESSION_WORKFILES.2026-09-05",
+  "source_root": "/mnt/data",
+  "file_count": 131,
+  "total_bytes": 2439123,
+  "archive": "AEGIS_ALL_SESSION_WORKFILES_2026-09-05.tar.gz",
+  "archive_sha256": "2a2e341ab4a47de792fd233bc87e09fbe8ba5a0c23c15c446be461ba4e80f692",
+  "source_of_truth_policy": "SESSION_SOURCE_OF_TRUTH_2026-09-05.md",
+  "status": "ARCHIVE_EVIDENCE_NOT_CANONICAL_PROMOTION",
+  "transfer_status": "RAW_ARCHIVE_PREPARED_LOCALLY; GITHUB_BINARY_TRANSFER_PENDING_CONNECTOR_FILE_UPLOAD_SUPPORT"
+}
