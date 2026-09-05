@@ -1,0 +1,65 @@
+name: R1.14 Product API Rate Limit
+
+on:
+  pull_request:
+    paths:
+      - 'product/apps/api-server/**'
+      - 'product/tests/api-runtime.test.mjs'
+      - '.github/workflows/r1.14-product-rate-limit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-rate-limit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked dependencies
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: API security regression including abuse control
+        working-directory: product
+        run: node --test tests/api-runtime.test.mjs
+      - name: Canonical deterministic regression
+        working-directory: product
+        run: npm run verify:deterministic
+      - name: Quality gates
+        working-directory: product
+        run: |
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Record boundary evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.14-rate-limit
+          {
+            echo 'R1_14_API_RATE_LIMIT=PASS'
+            echo 'scope=authenticated_principal_tenant_route_fixed_window_boundary'
+            echo 'health_probe_exemption=EXECUTED'
+            echo 'excess_dispatch_block=EXECUTED'
+            echo 'retry_after=EXECUTED'
+            echo 'distributed_rate_limit=NOT_EXECUTED'
+            echo 'waf_edge_protection=NOT_EXECUTED'
+            echo 'external_penetration_test=NOT_EXECUTED'
+            echo "commit=${GITHUB_SHA}"
+          } > build/r1.14-rate-limit/environment.txt
+          sha256sum product/apps/api-server/index.js product/tests/api-runtime.test.mjs .github/workflows/r1.14-product-rate-limit.yml > build/r1.14-rate-limit/source-sha256.txt
+      - name: Upload evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.14-api-rate-limit-evidence
+          path: build/r1.14-rate-limit/**
+          if-no-files-found: error
+          retention-days: 30
