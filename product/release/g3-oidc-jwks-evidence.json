@@ -1,0 +1,48 @@
+{
+  "gate": "G3_OIDC_JWKS_VERIFIER_ADAPTER",
+  "status": "VERIFIED_READY_FOR_INTEGRATION",
+  "candidateHead": "bd75211a40e992ef34d2b08442a9cf777e4e5684",
+  "rollbackPoint": "main@688d97d49a067d710c99c59253e601bf139a3c63",
+  "canonicalTests": {
+    "passed": 74,
+    "failed": 0,
+    "oidcJwksAdded": 9
+  },
+  "verifiedClaims": [
+    "OIDC discovery issuer equality",
+    "HTTPS issuer/JWKS boundary outside tests",
+    "RS256 signature verification with kid selection",
+    "issuer and audience validation",
+    "exp nbf iat validation with bounded skew",
+    "JWKS and discovery bounded cache",
+    "canonical principal id tenantId roles mapping",
+    "partial OIDC configuration fails closed",
+    "tampered malformed wrong-alg wrong-kid wrong-issuer wrong-audience expired not-before tokens fail closed"
+  ],
+  "releaseWorkflows": {
+    "product-convergence": 33999089451,
+    "dependency-reproducibility": 33999089426,
+    "container-smoke": 33999089439,
+    "staging-rollback": 33999089420,
+    "recovery-interruption": 33999089444,
+    "postgres-backup-restore": 33999089424,
+    "oci-signature": 33999089450,
+    "postgres-live-e2e": 33999089461,
+    "supply-chain": 33999089447,
+    "load-soak": 33999089455
+  },
+  "releaseWorkflowSummary": "10/10 SUCCESS on pre-evidence candidate",
+  "notExecuted": [
+    "token revocation or introspection",
+    "refresh and session lifecycle",
+    "production IdP tenant provisioning",
+    "MFA",
+    "WAF and rate limiting",
+    "external penetration testing",
+    "cross-tenant Data Plane row isolation",
+    "production KMS custody",
+    "production registry custody",
+    "Commercial GA"
+  ],
+  "promotionPolicy": "Evidence-bearing exact head must rerun the full release regression before merge. Passing this gate does not promote Commercial GA."
+}
