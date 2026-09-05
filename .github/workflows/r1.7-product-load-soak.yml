@@ -80,6 +80,7 @@ jobs:
           let total = 0;
           let failures = 0;
           let transportErrors = 0;
+          let maxLatency = 0;
 
           const percentile = (values, p) => {
             if (values.length === 0) return null;
@@ -104,6 +105,7 @@ jobs:
                 await response.arrayBuffer();
                 const elapsed = performance.now() - started;
                 latencies.push(elapsed);
+                if (elapsed > maxLatency) maxLatency = elapsed;
                 total += 1;
                 statuses.set(response.status, (statuses.get(response.status) ?? 0) + 1);
                 if (!response.ok) failures += 1;
@@ -135,7 +137,7 @@ jobs:
               p50: percentile(latencies, 50),
               p95: percentile(latencies, 95),
               p99: percentile(latencies, 99),
-              max: latencies.length ? Number(Math.max(...latencies).toFixed(3)) : null,
+              max: latencies.length ? Number(maxLatency.toFixed(3)) : null,
             },
             acceptance: {
               minimumRequests: 1000,
