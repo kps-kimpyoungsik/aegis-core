@@ -96,7 +96,7 @@ public final class KnowledgeKernelTest {
                 0.9, 0.9, t0, t0, Duration.ZERO, ""),
                 "nonpositive freshness blocked");
 
-        System.out.println("PASS " + assertions + "/20");
+        System.out.println("PASS " + assertions + "/22");
     }
 
     private static KnowledgeRecord record(
