@@ -56,7 +56,7 @@ public final class DataLifecycleKernelTest {
         check(backup.provenanceRef().equals("prov://backup-1"), "backup provenance preserved");
         check(safe.rollbackPoint().equals("rollback://dataset.work/v1"), "migration rollback preserved");
 
-        System.out.println("PASS " + assertions + "/20");
+        System.out.println("PASS " + assertions + "/21");
     }
 
     private static MigrationPlan migration(boolean destructive, boolean approved, String owner) {
