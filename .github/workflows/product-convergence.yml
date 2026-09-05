@@ -46,7 +46,7 @@ jobs:
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Lint
         run: npm run lint
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Release-surface strict typecheck
+        run: npm run typecheck:release
       - name: React SPA production build
         run: npm run build:web
