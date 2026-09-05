@@ -4,8 +4,14 @@ export default [
   },
   {
     files: ["**/*.{js,mjs,jsx,ts,tsx}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      parserOptions: {
+        ecmaFeatures: { jsx: true }
+      }
+    },
     rules: {
-      "curly": ["error", "all"],
       "eqeqeq": ["error", "always"],
       "no-debugger": "error",
       "no-eval": "error",
