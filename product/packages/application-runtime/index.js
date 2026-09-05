@@ -50,3 +50,43 @@ export async function executeTaskLifecycle(input) {
     return { status: "FAILED", ownership, task, events, pointContext, error, memory: failureMemory };
   }
 }
+
+export function createRuntimeStateStore() {
+  const tasks = new Map();
+  const events = [];
+  const memories = new Map();
+  let sequence = 0;
+  return Object.freeze({
+    record(result) {
+      if (result?.task?.id) tasks.set(result.task.id, Object.freeze({ ...result.task }));
+      for (const event of result?.events ?? []) events.push(Object.freeze({ sequence: ++sequence, ...event }));
+      if (result?.memory?.id) memories.set(result.memory.id, result.memory);
+      return result;
+    },
+    snapshot() {
+      return Object.freeze({
+        tasks: Object.freeze([...tasks.values()].map((task) => Object.freeze({ ...task }))),
+        events: Object.freeze(events.map((event) => Object.freeze({ ...event }))),
+        memories: Object.freeze([...memories.values()]),
+      });
+    },
+  });
+}
+
+export function createTaskExecutionUseCase({ runHarness, stateStore = createRuntimeStateStore(), activeClaims = [], memoryItems = [], retrievalPolicy = {} } = {}) {
+  if (typeof runHarness !== 'function') throw new Error('AEGIS-APP-001 RUN_HARNESS_REQUIRED');
+  return Object.freeze({
+    async executeTask(command) {
+      const result = await executeTaskLifecycle({
+        ...command,
+        runHarness,
+        activeClaims: command.activeClaims ?? activeClaims,
+        memoryItems: command.memoryItems ?? memoryItems,
+        retrievalPolicy: { ...retrievalPolicy, ...(command.retrievalPolicy ?? {}) },
+      });
+      stateStore.record(result);
+      return result;
+    },
+    getSnapshot() { return stateStore.snapshot(); },
+  });
+}

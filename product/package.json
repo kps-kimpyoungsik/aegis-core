@@ -1,6 +1,6 @@
 {
   "name": "aegis-release-convergence",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "workspaces": ["packages/*","apps/*"],
@@ -18,7 +18,8 @@
     "lint": "eslint .",
     "build:web": "npm run build --workspace=aegis-web-console",
     "test": "node --test tests/*.test.mjs",
-    "verify:deterministic": "npm run check:ownership && npm run check:contracts && npm run check:architecture && npm run check:boundaries && npm run check:duplicates && npm run check:versions && npm run check:strict-config && npm run check:release && npm test",
+    "bootstrap:workspace": "node tools/bootstrap-workspace.mjs",
+    "verify:deterministic": "npm run bootstrap:workspace && npm run check:ownership && npm run check:contracts && npm run check:architecture && npm run check:boundaries && npm run check:duplicates && npm run check:versions && npm run check:strict-config && npm run check:release && npm test",
     "verify:quality": "npm run lint && npm run typecheck:release && npm run build:web",
     "verify": "npm run verify:deterministic && npm run verify:quality",
     "test:storage": "node --test tests/storage-runtime.test.mjs",
@@ -30,7 +31,8 @@
     "test:application-runtime": "node --test tests/application-runtime.test.mjs",
     "test:api-runtime": "node --test tests/api-runtime.test.mjs",
     "test:worker-daemon": "node --test tests/worker-daemon.test.mjs",
-    "test:web-projection": "node --test tests/web-projection.test.mjs"
+    "test:web-projection": "node --test tests/web-projection.test.mjs",
+    "test:e2e": "node --test tests/e2e-runtime.test.mjs"
   },
   "devDependencies": {
     "eslint": "^10.9.1",
