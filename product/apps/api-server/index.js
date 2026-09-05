@@ -1,6 +1,7 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { createTask } from "@aegis/core-domain";
+import { createConfiguredAuthenticator } from "./oidc-jwks-authenticator.js";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
 const MIN_BEARER_TOKEN_BYTES = 32;
@@ -114,6 +115,12 @@ function createEnvironmentAuthenticator(env = process.env) {
   };
 }
 
+function createDefaultAuthenticator(env = process.env) {
+  const oidc = createConfiguredAuthenticator(env);
+  if (oidc) return oidc;
+  return createEnvironmentAuthenticator(env);
+}
+
 function requireTenantBinding(req, principal) {
   const requestedTenant = req.headers["x-aegis-tenant"];
   if (typeof requestedTenant !== "string" || requestedTenant.trim().length === 0) {
@@ -180,7 +187,7 @@ export function createApiServer({
 
 const defaultServer = createApiServer({
   executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
-  authenticateRequest: createEnvironmentAuthenticator(),
+  authenticateRequest: createDefaultAuthenticator(),
 });
 const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
 if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
