@@ -1,5 +1,6 @@
 import http from "node:http";
 import { createTask } from "@aegis/core-domain";
+import { ApiSecurityError, establishSecurityContext } from "./security.js";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
 
@@ -56,14 +57,18 @@ async function readJson(req) {
   }
 }
 
-export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID() } = {}) {
+export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID(), securityPolicy = null } = {}) {
   if (typeof executeTask !== "function") throw new Error("AEGIS-API-001 EXECUTE_TASK_REQUIRED");
   return http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/health/live") return json(res, 200, { status: "HEALTHY" });
       if (req.method === "GET" && req.url === "/health/ready") return json(res, 200, { status: "READY", contracts: "0.7.0" });
-      if (req.method === "GET" && req.url === "/v1/runtime/snapshot") return json(res, 200, getSnapshot());
+      if (req.method === "GET" && req.url === "/v1/runtime/snapshot") {
+        await establishSecurityContext(req, securityPolicy, { roles: ["viewer", "operator", "admin"] });
+        return json(res, 200, getSnapshot());
+      }
       if (req.method === "POST" && req.url === "/v1/tasks") {
+        const securityContext = await establishSecurityContext(req, securityPolicy, { roles: ["operator", "admin"] });
         const body = await readJson(req);
         if (!body.goal || !body.owner || !body.responsibility) return json(res, 400, { code: "AEGIS-API-002 INVALID_TASK_COMMAND" });
         const task = createTask({ id: body.id ?? idFactory(), goal: body.goal, owner: body.owner });
@@ -73,12 +78,13 @@ export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [],
           owner: body.owner,
           retrievalQuery: body.retrievalQuery ?? {},
           retrievalPolicy: body.retrievalPolicy ?? {},
+          securityContext,
         });
         return json(res, result.status === "HANDOFF_REQUIRED" ? 409 : result.status === "FAILED" ? 422 : 202, result);
       }
       return json(res, 404, { code: "AEGIS-API-404 NOT_FOUND" });
     } catch (error) {
-      if (error instanceof ApiInputError) return json(res, error.status, { code: error.code });
+      if (error instanceof ApiInputError || error instanceof ApiSecurityError) return json(res, error.status, { code: error.code });
       return json(res, 500, { code: "AEGIS-API-500 INTERNAL_ERROR" });
     }
   });
