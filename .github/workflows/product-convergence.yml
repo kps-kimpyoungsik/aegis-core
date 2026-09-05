@@ -26,8 +26,8 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
-      - name: Install workspace
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install workspace from canonical lock
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Canonical deterministic verification
         run: npm run verify:deterministic
 
@@ -42,8 +42,8 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
-      - name: Install workspace
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install workspace from canonical lock
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Lint
         run: npm run lint
       - name: Release-surface strict typecheck

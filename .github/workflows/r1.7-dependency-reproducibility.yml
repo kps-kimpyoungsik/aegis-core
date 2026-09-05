@@ -1,0 +1,90 @@
+name: R1.7 Dependency Reproducibility
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-reproducibility:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Verify committed lock is canonical and stable
+        working-directory: product
+        run: |
+          set -euo pipefail
+          test -s package-lock.json
+          cp package-lock.json /tmp/package-lock.committed.json
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.committed
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.first
+          cmp /tmp/package-lock.committed.json package-lock.json
+          cp package-lock.json /tmp/package-lock.first.json
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.second
+          cmp /tmp/package-lock.first.json package-lock.json
+          cmp /tmp/package-lock.committed.json package-lock.json
+
+      - name: Prove clean npm ci and product quality gates
+        working-directory: product
+        run: |
+          set -euo pipefail
+          rm -rf node_modules
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Reject unlocked install paths in release surfaces
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'npm install( |$)' \
+            .github/workflows/product-convergence.yml \
+            .github/workflows/r1.0-product-live-postgres-e2e.yml \
+            .github/workflows/r1.1-product-recovery-interruption.yml \
+            .github/workflows/r1.2-product-container-smoke.yml \
+            .github/workflows/r1.3-product-supply-chain.yml \
+            .github/workflows/r1.4-product-staging-rollback.yml \
+            .github/workflows/r1.6-product-oci-signature.yml \
+            product/Dockerfile; then
+            echo 'Unlocked npm install path detected in canonical release surface' >&2
+            exit 1
+          fi
+
+      - name: Record reproducibility evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.7-dependency-reproducibility
+          cp /tmp/package-lock.sha256.committed build/r1.7-dependency-reproducibility/
+          cp /tmp/package-lock.sha256.first build/r1.7-dependency-reproducibility/
+          cp /tmp/package-lock.sha256.second build/r1.7-dependency-reproducibility/
+          sha256sum product/package.json product/package-lock.json product/Dockerfile > build/r1.7-dependency-reproducibility/source-sha256.txt
+          printf 'R1_7_DEPENDENCY_REPRODUCIBILITY=PASS\n' > build/r1.7-dependency-reproducibility/gate-status.txt
+
+      - name: Upload reproducibility evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.7-dependency-reproducibility
+          path: build/r1.7-dependency-reproducibility/**
+          if-no-files-found: error
+          retention-days: 30

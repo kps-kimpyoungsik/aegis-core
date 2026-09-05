@@ -44,9 +44,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Install product workspace
+      - name: Install product workspace from canonical lock
         working-directory: product
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Product regression
         working-directory: product
         run: |

@@ -50,9 +50,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java postgresql-client
           test -f /usr/share/java/postgresql.jar
-      - name: Install product workspace dependencies
+      - name: Install product workspace from canonical lock
         working-directory: product
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Product deterministic and quality regression
         working-directory: product
         run: |

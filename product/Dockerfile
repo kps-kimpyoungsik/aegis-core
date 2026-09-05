@@ -4,12 +4,12 @@ WORKDIR /opt/aegis/product
 ENV NODE_ENV=production
 ENV PORT=8080
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY apps ./apps
 COPY packages ./packages
 
 RUN apk upgrade --no-cache \
-    && npm install --omit=dev --ignore-scripts --no-audit --no-fund \
+    && npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
     && npm cache clean --force \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 

@@ -29,7 +29,7 @@ jobs:
         working-directory: product
         run: |
           set -euo pipefail
-          npm install --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
           npm run verify:deterministic
           npm run lint
           npm run typecheck:release
@@ -94,6 +94,7 @@ jobs:
           set -euo pipefail
           image_id="$(cat build/r1.3-supply-chain/image-id.txt)"
           dockerfile_sha="$(sha256sum product/Dockerfile | awk '{print $1}')"
+          lock_sha="$(sha256sum product/package-lock.json | awk '{print $1}')"
           sbom_sha="$(awk '{print $1}' build/r1.3-supply-chain/sbom.sha256)"
           cat > build/r1.3-supply-chain/provenance.json <<EOF
           {
@@ -105,6 +106,7 @@ jobs:
             "workflow_run_attempt": "${RUN_ATTEMPT}",
             "image_id": "${image_id}",
             "dockerfile_sha256": "${dockerfile_sha}",
+            "package_lock_sha256": "${lock_sha}",
             "sbom_sha256": "${sbom_sha}",
             "sbom_tool": "anchore/syft:v1.42.3",
             "scanner": "aquasec/trivy:0.72.0",
