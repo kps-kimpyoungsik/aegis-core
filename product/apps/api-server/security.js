@@ -26,13 +26,22 @@ export function normalizePrincipal(value) {
   return Object.freeze({ subject, tenantId, roles: Object.freeze(roles) });
 }
 
+async function verifyBearerToken(policy, token) {
+  try {
+    return await policy.verifyBearerToken(token);
+  } catch (error) {
+    if (error instanceof ApiSecurityError) throw error;
+    throw new ApiSecurityError(401, "AEGIS-SEC-008 TOKEN_REJECTED");
+  }
+}
+
 export async function establishSecurityContext(req, policy, requirement) {
   if (!policy) return null;
   if (typeof policy.verifyBearerToken !== "function") {
     throw new ApiSecurityError(503, "AEGIS-SEC-004 VERIFIER_NOT_CONFIGURED");
   }
   const token = readBearerToken(req.headers);
-  const principal = normalizePrincipal(await policy.verifyBearerToken(token));
+  const principal = normalizePrincipal(await verifyBearerToken(policy, token));
   const requestedTenant = req.headers["x-aegis-tenant"];
   if (typeof requestedTenant !== "string" || !requestedTenant.trim()) {
     throw new ApiSecurityError(401, "AEGIS-SEC-005 TENANT_CONTEXT_REQUIRED");
