@@ -1,8 +1,9 @@
 {
   "gate": "G3_OIDC_JWKS_VERIFIER_ADAPTER",
   "status": "VERIFIED_READY_FOR_INTEGRATION",
-  "candidateHead": "bd75211a40e992ef34d2b08442a9cf777e4e5684",
-  "rollbackPoint": "main@688d97d49a067d710c99c59253e601bf139a3c63",
+  "candidateHead": "5c5d7581ff1f1de67a7f1d944fecd9d08889f07c",
+  "integrationBase": "main@1d3f83b0c6ffe0bd8bdc84f29ae8e47a4bfa1eef",
+  "originalRollbackPoint": "main@688d97d49a067d710c99c59253e601bf139a3c63",
   "canonicalTests": {
     "passed": 74,
     "failed": 0,
@@ -19,7 +20,7 @@
     "partial OIDC configuration fails closed",
     "tampered malformed wrong-alg wrong-kid wrong-issuer wrong-audience expired not-before tokens fail closed"
   ],
-  "releaseWorkflows": {
+  "preEvidenceReleaseWorkflows": {
     "product-convergence": 33999089451,
     "dependency-reproducibility": 33999089426,
     "container-smoke": 33999089439,
@@ -31,7 +32,25 @@
     "supply-chain": 33999089447,
     "load-soak": 33999089455
   },
-  "releaseWorkflowSummary": "10/10 SUCCESS on pre-evidence candidate",
+  "evidenceBearingOldBaseWorkflows": {
+    "product-convergence": 33999165995,
+    "dependency-reproducibility": 33999166054,
+    "container-smoke": 33999165986,
+    "recovery-interruption": 33999166050,
+    "postgres-live-e2e": 33999165978,
+    "staging-rollback": 33999166039,
+    "postgres-backup-restore": 33999166040,
+    "oci-signature": 33999166014,
+    "load-soak": 33999165988,
+    "supply-chain": 33999166032
+  },
+  "crossSessionDrift": {
+    "detected": true,
+    "newMain": "1d3f83b0c6ffe0bd8bdc84f29ae8e47a4bfa1eef",
+    "change": "R1.12 protected production approval consumption boundary",
+    "ownerConflict": false,
+    "requiredAction": "rerun all release workflows on PR merge-ref against latest main before merge"
+  },
   "notExecuted": [
     "token revocation or introspection",
     "refresh and session lifecycle",
@@ -44,5 +63,5 @@
     "production registry custody",
     "Commercial GA"
   ],
-  "promotionPolicy": "Evidence-bearing exact head must rerun the full release regression before merge. Passing this gate does not promote Commercial GA."
+  "promotionPolicy": "Latest-main merge-ref must pass the full release regression before merge. Passing this gate does not promote Commercial GA."
 }
