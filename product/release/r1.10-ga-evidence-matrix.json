@@ -6,7 +6,7 @@
     "G1_CLEAN_BUILD": "PASS",
     "G2_ARTIFACT_SUPPLY_CHAIN": "PASS",
     "G3_SECURITY": "NOT_EXECUTED",
-    "G4_DATA_SAFETY": "NOT_EXECUTED",
+    "G4_DATA_SAFETY": "PASS",
     "G5_STAGING": "PASS",
     "G6_RELIABILITY_PERFORMANCE": "PASS",
     "G7_ROLLBACK": "PASS",
@@ -15,13 +15,13 @@
   "decision": "NOT_PROMOTED",
   "missing": [
     "G3_SECURITY",
-    "G4_DATA_SAFETY",
     "G8_PRODUCTION_APPROVAL"
   ],
   "evidence": {
     "G0_SOURCE_ARCHITECTURE": ["product-convergence", "ownership/architecture/boundary/duplicate gates"],
     "G1_CLEAN_BUILD": ["canonical package-lock", "npm ci", "lint", "release typecheck", "React production build"],
     "G2_ARTIFACT_SUPPLY_CHAIN": ["CycloneDX SBOM + vulnerability scan", "signed provenance/SBOM attestations", "OCI signature boundary"],
+    "G4_DATA_SAFETY": ["live PostgreSQL E2E", "process interruption recovery", "R1.8 destructive logical backup/restore qualification", "corrupted backup fail-closed proof"],
     "G5_STAGING": ["local production-like staging rollout/rollback drill"],
     "G6_RELIABILITY_PERFORMANCE": ["bounded CI load/soak reliability evidence"],
     "G7_ROLLBACK": ["immutable container rollback drill"],
@@ -29,7 +29,7 @@
   },
   "boundaryNotes": {
     "G3_SECURITY": "R1.9 HTTP input/error-disclosure hardening is PASS, but customer-grade authentication/OIDC/RBAC, rate limiting/WAF and external penetration/security qualification are not yet executed.",
-    "G4_DATA_SAFETY": "Live PostgreSQL E2E and recovery semantics are proven, but production backup/restore qualification is not yet executed.",
+    "G4_DATA_SAFETY": "PASS is based on canonical-state backup, destructive database recreation, byte-identical restore verification, recovery regression and corrupted-backup fail-closed evidence. Production RPO/RTO, PITR, cloud snapshots and cross-region DR remain unqualified.",
     "G5_STAGING": "PASS is limited to the executed local production-like staging mechanism; cloud/Kubernetes traffic cutover remains unqualified.",
     "G6_RELIABILITY_PERFORMANCE": "PASS is limited to the executed bounded CI load/soak gate; no production SLO or capacity claim is made.",
     "G7_ROLLBACK": "PASS is limited to immutable container rollback evidence; production deployment rollback remains unqualified.",
