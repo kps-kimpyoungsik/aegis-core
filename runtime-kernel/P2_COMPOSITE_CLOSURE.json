@@ -1,19 +1,18 @@
 {
   "phase": "P2 Runtime Kernel",
-  "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
+  "status": "READY_FOR_COMPOSITE_CLOSURE",
   "canonical_owner": "aegis.work-runtime",
   "verified_physical_gates": {
     "P2-01_execution_context_state_machine": "VERIFIED_INTEGRATED",
     "P2-02_dispatcher_tool_event_loop_scheduler": "VERIFIED_INTEGRATED",
-    "P2-03_checkpoint_resume_crash_replay": "VERIFIED_READY_FOR_INTEGRATION",
+    "P2-03_checkpoint_resume_crash_replay": "VERIFIED_INTEGRATED",
+    "P2-04_budget_deadline_cancellation_backpressure": "VERIFIED_READY_FOR_INTEGRATION",
     "P2-05_validation_compare": "VERIFIED_INTEGRATED",
     "P2-06_idempotency_envelope": "VERIFIED_INTEGRATED",
     "P2-07_trace_audit_correlation": "VERIFIED_INTEGRATED",
     "P2-08_rollback_coordination": "VERIFIED_INTEGRATED"
   },
-  "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P2-04_budget_deadline_cancellation_backpressure": "GAP"
-  },
+  "recorded_but_not_physically_verified_in_canonical_repo": {},
   "p2_01_evidence": {
     "workflow_run": 33927474207,
     "assertions": "16/16",
@@ -41,7 +40,18 @@
     "artifact_id": 9960270892,
     "artifact_zip_sha256": "d5aff47f490912f0a83dcf2321b29d48645bc0a6bf6c70193b49960b128fa9f3"
   },
-  "closure_rule": "P2 cannot be commercially closed until P2-04 has canonical physical source, regression evidence, dependency evidence, rollback and provenance in this repository or an accepted canonical reusable package.",
+  "p2_04_evidence": {
+    "workflow_run": 33936386753,
+    "assertions": "18/18",
+    "regression": ["16/16", "17/17", "19/19", "14/14", "16/16", "17/17"],
+    "evidence_count_guard": "PASS",
+    "dependency": "java.base only",
+    "jar": "aegis-runtime-kernel-0.8.0.jar",
+    "jar_sha256": "633306640014f89f19d68a1b2f3c34eef69a65dd603d21034552efe35a4dbac8",
+    "artifact_id": 9960306094,
+    "artifact_zip_sha256": "0a8b25f1eabafcc935ad5ef6ba4ea4082230c4185a3f06e5d0b61e4d263f6b45"
+  },
+  "closure_rule": "P2 commercial closure requires P2-04 merge into canonical main followed by a full composite regression on the merged tree and immutable evidence capture.",
   "failure_signatures": [
     {
       "id": "TEST_EVIDENCE_DECLARED_COUNT_DRIFT",
@@ -67,11 +77,16 @@
     "replay_sequence_guard": "ACTIVE",
     "replay_event_dedup": "ACTIVE",
     "completed_effect_replay_suppression": "ACTIVE",
-    "stale_result_rejection": "ACTIVE",
+    "budget_limits": "FAIL_CLOSED",
+    "deadline": "CANCEL_ON_EXPIRY",
+    "cancellation_precedence": "EXPLICIT",
+    "queue_backpressure": "DEFER",
+    "concurrency_backpressure": "DEFER",
+    "fairness": "LOWER_SEQUENCE_FIRST",
     "audit_source_provenance": "EXPLICIT",
     "trace_sensitive_attribute_guard": "ACTIVE",
     "rollback_authority_gate": "ACTIVE"
   },
-  "next_pointer": "P2-04 Budget / Deadline / Cancellation / Backpressure physical canonical implementation",
-  "rollback_point": "main@4df955caecb1dbf6a9a4ce037f4b3d0e5811e66d"
+  "next_pointer": "P2 Runtime Kernel full composite regression on canonical main after P2-04 integration",
+  "rollback_point": "main@e06e298169f04915ffe2a0bf1817fe337017ba6e"
 }
