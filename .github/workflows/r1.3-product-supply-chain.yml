@@ -1,0 +1,121 @@
+name: R1.3 Product Supply Chain Gate
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.3-product-supply-chain.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  product-supply-chain:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Build product OCI candidate
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.3-supply-chain
+          docker build --pull --tag aegis-product:r1.3-candidate ./product
+          docker image inspect aegis-product:r1.3-candidate --format '{{.Id}}' | tee build/r1.3-supply-chain/image-id.txt
+
+      - name: Generate CycloneDX SBOM with patched Syft
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            anchore/syft:v1.42.3 \
+            aegis-product:r1.3-candidate -o cyclonedx-json \
+            > build/r1.3-supply-chain/sbom.cdx.json
+          test -s build/r1.3-supply-chain/sbom.cdx.json
+          sha256sum build/r1.3-supply-chain/sbom.cdx.json | tee build/r1.3-supply-chain/sbom.sha256
+
+      - name: Scan HIGH and CRITICAL vulnerabilities with patched Trivy
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            aquasec/trivy:0.72.0 \
+            image --no-progress --scanners vuln --severity HIGH,CRITICAL \
+            --ignore-unfixed --exit-code 1 \
+            --format json --output /tmp/trivy.json \
+            aegis-product:r1.3-candidate || scan_status=$?
+          if [ "${scan_status:-0}" -ne 0 ]; then
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v "$HOME/.cache/trivy:/root/.cache/" \
+              aquasec/trivy:0.72.0 \
+              image --no-progress --scanners vuln --severity HIGH,CRITICAL \
+              --ignore-unfixed --format json aegis-product:r1.3-candidate \
+              > build/r1.3-supply-chain/trivy.json
+            exit "$scan_status"
+          fi
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            aquasec/trivy:0.72.0 \
+            image --no-progress --scanners vuln --severity HIGH,CRITICAL \
+            --ignore-unfixed --format json aegis-product:r1.3-candidate \
+            > build/r1.3-supply-chain/trivy.json
+          test -s build/r1.3-supply-chain/trivy.json
+
+      - name: Record unsigned provenance evidence
+        env:
+          GIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          image_id="$(cat build/r1.3-supply-chain/image-id.txt)"
+          dockerfile_sha="$(sha256sum product/Dockerfile | awk '{print $1}')"
+          sbom_sha="$(awk '{print $1}' build/r1.3-supply-chain/sbom.sha256)"
+          cat > build/r1.3-supply-chain/provenance.json <<EOF
+          {
+            "schema": "aegis.release.provenance-evidence.v1",
+            "repository": "${REPOSITORY}",
+            "git_sha": "${GIT_SHA}",
+            "ref_name": "${REF_NAME}",
+            "workflow_run_id": "${RUN_ID}",
+            "workflow_run_attempt": "${RUN_ATTEMPT}",
+            "image_id": "${image_id}",
+            "dockerfile_sha256": "${dockerfile_sha}",
+            "sbom_sha256": "${sbom_sha}",
+            "sbom_tool": "anchore/syft:v1.42.3",
+            "scanner": "aquasec/trivy:0.72.0",
+            "signature_status": "NOT_EXECUTED",
+            "note": "Unsigned provenance evidence only; signature/key-custody remains owned by the canonical authority/signature boundary."
+          }
+          EOF
+          python3 -m json.tool build/r1.3-supply-chain/provenance.json >/dev/null
+          sha256sum build/r1.3-supply-chain/provenance.json | tee build/r1.3-supply-chain/provenance.sha256
+          printf 'R1_3_PRODUCT_SUPPLY_CHAIN=PASS\n' > build/r1.3-supply-chain/gate-status.txt
+
+      - name: Upload supply-chain evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.3-product-supply-chain
+          path: build/r1.3-supply-chain/**
+          if-no-files-found: error
