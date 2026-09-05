@@ -6,10 +6,10 @@
     "P3-01_memory_semantic_model": "VERIFIED_INTEGRATED",
     "P3-02_knowledge_lifecycle": "VERIFIED_INTEGRATED",
     "P3-03_skill_asset_registry": "VERIFIED_INTEGRATED",
-    "P3-04_selective_retrieval": "VERIFIED_READY_FOR_INTEGRATION"
+    "P3-04_selective_retrieval": "VERIFIED_INTEGRATED",
+    "P3-05_export_import": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P3-05_export_import": "GAP",
     "P3-06_composite_closure": "GAP"
   },
   "p3_01_evidence": {
@@ -25,27 +25,33 @@
     "status": "VERIFIED_INTEGRATED"
   },
   "p3_04_evidence": {
-    "workflow_run": 33957090127,
-    "workflow_job": 101282265906,
+    "assertions": "25/25",
+    "status": "VERIFIED_INTEGRATED"
+  },
+  "p3_05_evidence": {
+    "workflow_run": 33957238884,
+    "workflow_job": 101282673215,
     "memory_regression": "18/18",
     "knowledge_regression": "22/22",
     "skill_asset_regression": "20/20",
-    "retrieval_assertions": "25/25",
+    "retrieval_regression": "25/25",
+    "portability_assertions": "25/25",
     "evidence_count_guard": "PASS",
     "release_package_guard": "PASS",
     "java": "Temurin 21.0.12+1",
     "dependency": "java.base only",
-    "jar": "aegis-portable-brain-0.4.0.jar",
-    "jar_sha256": "072a283e3532e9d567e38836d3b4f7d4b7976825e8482e2171241d49a090d741",
-    "artifact_id": 9966707556,
-    "artifact_zip_sha256": "d6ae6a953b2454ba974b9e98abf7dc2524d355bf5dfebd20d106c2cee4f56503"
+    "jar": "aegis-portable-brain-0.5.0.jar",
+    "jar_sha256": "6cb3680c69f88c0be7d86e8f4ad7d3807613cc4f43fa07c92aa59fc67e4a8ae3",
+    "artifact_id": 9966753814,
+    "artifact_zip_sha256": "929ab8a3bd41b16311fca94950ac7072757636f9c35e77272e4b9aad550eab1a"
   },
   "ownership": {
     "memory_semantics": "aegis.portable-brain",
     "knowledge_semantics": "aegis.portable-brain",
     "skill_asset_semantics": "aegis.portable-brain",
     "retrieval_orchestration": "aegis.portable-brain",
-    "persistence_mechanics": "aegis.data-plane",
+    "snapshot_semantics": "aegis.portable-brain",
+    "snapshot_transport_and_storage": "aegis.data-plane/adapters",
     "runtime_execution": "aegis.work-runtime",
     "promotion_authority": "aegis.governance.freeze"
   },
@@ -55,8 +61,10 @@
     "skill routing uses manifest triggers and exclusions before loading full detail",
     "retrieval composes existing source-specific selectors rather than duplicating their semantics",
     "retrieval is explicitly bounded by source limit, item limit and context budget",
-    "retrieval preserves provenance on every admitted context item",
-    "exact/semantic/vector/graph relevance engines remain replaceable extensions outside portable brain core",
+    "snapshot schema and package version are explicit and provenance-preserving",
+    "snapshot import rejects duplicate canonical identities per category",
+    "newer source package import is blocked by default unless explicitly allowed",
+    "snapshot transport and physical storage stay outside portable brain semantics",
     "portable brain does not own promotion authority",
     "vendor persistence semantics remain outside portable brain"
   ],
@@ -66,6 +74,6 @@
     "framework_dependency": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Merge P3-04 to canonical main, then P3-05 Export / Import portability",
-  "rollback_point": "main@c12f11e4596c33bac2fdeeaefc71a55b77576b07"
+  "next_pointer": "Merge P3-05 to canonical main, then P3-06 Composite Closure",
+  "rollback_point": "main@4ae02d5ce1a019e82248fb1bc30ae12fb3c7fa67"
 }
