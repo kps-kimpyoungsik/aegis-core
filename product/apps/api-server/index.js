@@ -1,6 +1,7 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { createTask } from "@aegis/core-domain";
+import { createOidcJwtAuthenticator } from "./oidc-jwt-authenticator.js";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
 const MIN_BEARER_TOKEN_BYTES = 32;
@@ -41,16 +42,12 @@ function isJsonContentType(value) {
 }
 
 async function readJson(req) {
-  if (!isJsonContentType(req.headers["content-type"])) {
-    throw new ApiInputError(415, "AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED");
-  }
-
+  if (!isJsonContentType(req.headers["content-type"])) throw new ApiInputError(415, "AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED");
   const declaredLength = Number(req.headers["content-length"] ?? 0);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_BODY_BYTES) {
     req.resume();
     throw new ApiInputError(413, "AEGIS-API-004 PAYLOAD_TOO_LARGE");
   }
-
   const chunks = [];
   let receivedBytes = 0;
   for await (const chunk of req) {
@@ -62,12 +59,8 @@ async function readJson(req) {
     chunks.push(chunk);
   }
   if (chunks.length === 0) return {};
-
-  try {
-    return JSON.parse(Buffer.concat(chunks, receivedBytes).toString("utf8"));
-  } catch {
-    throw new ApiInputError(400, "AEGIS-API-005 MALFORMED_JSON");
-  }
+  try { return JSON.parse(Buffer.concat(chunks, receivedBytes).toString("utf8")); }
+  catch { throw new ApiInputError(400, "AEGIS-API-005 MALFORMED_JSON"); }
 }
 
 function validatePrincipal(principal) {
@@ -75,11 +68,7 @@ function validatePrincipal(principal) {
   if (typeof principal.id !== "string" || principal.id.trim().length === 0) return null;
   if (typeof principal.tenantId !== "string" || principal.tenantId.trim().length === 0) return null;
   if (!Array.isArray(principal.roles) || !principal.roles.every((role) => typeof role === "string" && role.trim().length > 0)) return null;
-  return Object.freeze({
-    id: principal.id.trim(),
-    tenantId: principal.tenantId.trim(),
-    roles: Object.freeze([...new Set(principal.roles.map((role) => role.trim()))]),
-  });
+  return Object.freeze({ id: principal.id.trim(), tenantId: principal.tenantId.trim(), roles: Object.freeze([...new Set(principal.roles.map((role) => role.trim()))]) });
 }
 
 function parseRoles(value) {
@@ -87,22 +76,17 @@ function parseRoles(value) {
   return [...new Set(value.split(",").map((role) => role.trim()).filter(Boolean))];
 }
 
-function createEnvironmentAuthenticator(env = process.env) {
+export function createEnvironmentAuthenticator(env = process.env) {
   const token = env.AEGIS_API_BEARER_TOKEN;
   if (!token) return async () => null;
-
   const tokenBytes = Buffer.from(token, "utf8");
   if (tokenBytes.length < MIN_BEARER_TOKEN_BYTES) throw new Error("AEGIS-API-009 BEARER_TOKEN_TOO_SHORT");
-
   const principalId = env.AEGIS_API_PRINCIPAL_ID?.trim();
   if (!principalId) throw new Error("AEGIS-API-010 PRINCIPAL_ID_REQUIRED");
-
   const roles = parseRoles(env.AEGIS_API_ROLES);
   if (roles.length === 0) throw new Error("AEGIS-API-011 PRINCIPAL_ROLES_REQUIRED");
-
   const tenantId = env.AEGIS_API_TENANT_ID?.trim();
   if (!tenantId) throw new Error("AEGIS-API-012 TENANT_ID_REQUIRED");
-
   const expected = Buffer.from(`Bearer ${token}`, "utf8");
   const principal = Object.freeze({ id: principalId, tenantId, roles: Object.freeze(roles) });
   return async (req) => {
@@ -114,35 +98,40 @@ function createEnvironmentAuthenticator(env = process.env) {
   };
 }
 
+export function createConfiguredAuthenticator(env = process.env, options = {}) {
+  const oidcIssuer = env.AEGIS_OIDC_ISSUER?.trim();
+  const oidcAudience = env.AEGIS_OIDC_AUDIENCE?.trim();
+  if (oidcIssuer || oidcAudience) {
+    if (!oidcIssuer || !oidcAudience) throw new Error("AEGIS-API-015 OIDC_CONFIGURATION_INCOMPLETE");
+    return createOidcJwtAuthenticator({
+      issuer: oidcIssuer,
+      audience: oidcAudience,
+      tenantClaim: env.AEGIS_OIDC_TENANT_CLAIM?.trim() || "tenant_id",
+      rolesClaim: env.AEGIS_OIDC_ROLES_CLAIM?.trim() || "roles",
+      fetchImpl: options.fetchImpl,
+      now: options.now,
+    });
+  }
+  return createEnvironmentAuthenticator(env);
+}
+
 function requireTenantBinding(req, principal) {
   const requestedTenant = req.headers["x-aegis-tenant"];
-  if (typeof requestedTenant !== "string" || requestedTenant.trim().length === 0) {
-    throw new ApiAuthorizationError(400, "AEGIS-API-013 TENANT_CONTEXT_REQUIRED");
-  }
-  if (requestedTenant.trim() !== principal.tenantId) {
-    throw new ApiAuthorizationError(403, "AEGIS-API-014 TENANT_MISMATCH");
-  }
+  if (typeof requestedTenant !== "string" || requestedTenant.trim().length === 0) throw new ApiAuthorizationError(400, "AEGIS-API-013 TENANT_CONTEXT_REQUIRED");
+  if (requestedTenant.trim() !== principal.tenantId) throw new ApiAuthorizationError(403, "AEGIS-API-014 TENANT_MISMATCH");
 }
 
 async function requirePrincipal(req, authenticateRequest, allowedRoles) {
   const principal = validatePrincipal(await authenticateRequest(req));
   if (!principal) throw new ApiAuthorizationError(401, "AEGIS-API-006 AUTHENTICATION_REQUIRED");
   requireTenantBinding(req, principal);
-  if (!allowedRoles.some((role) => principal.roles.includes(role))) {
-    throw new ApiAuthorizationError(403, "AEGIS-API-007 FORBIDDEN");
-  }
+  if (!allowedRoles.some((role) => principal.roles.includes(role))) throw new ApiAuthorizationError(403, "AEGIS-API-007 FORBIDDEN");
   return principal;
 }
 
-export function createApiServer({
-  executeTask,
-  getSnapshot = () => ({ tasks: [], events: [] }),
-  idFactory = () => crypto.randomUUID(),
-  authenticateRequest = async () => null,
-} = {}) {
+export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID(), authenticateRequest = async () => null } = {}) {
   if (typeof executeTask !== "function") throw new Error("AEGIS-API-001 EXECUTE_TASK_REQUIRED");
   if (typeof authenticateRequest !== "function") throw new Error("AEGIS-API-008 AUTHENTICATOR_REQUIRED");
-
   return http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/health/live") return json(res, 200, { status: "HEALTHY" });
@@ -156,32 +145,19 @@ export function createApiServer({
         const body = await readJson(req);
         if (!body.goal || !body.owner || !body.responsibility) return json(res, 400, { code: "AEGIS-API-002 INVALID_TASK_COMMAND" });
         const task = createTask({ id: body.id ?? idFactory(), goal: body.goal, owner: body.owner });
-        const result = await executeTask({
-          task,
-          principal,
-          responsibility: body.responsibility,
-          owner: body.owner,
-          retrievalQuery: body.retrievalQuery ?? {},
-          retrievalPolicy: body.retrievalPolicy ?? {},
-        });
+        const result = await executeTask({ task, principal, responsibility: body.responsibility, owner: body.owner, retrievalQuery: body.retrievalQuery ?? {}, retrievalPolicy: body.retrievalPolicy ?? {} });
         return json(res, result.status === "HANDOFF_REQUIRED" ? 409 : result.status === "FAILED" ? 422 : 202, result);
       }
       return json(res, 404, { code: "AEGIS-API-404 NOT_FOUND" });
     } catch (error) {
       if (error instanceof ApiInputError) return json(res, error.status, { code: error.code });
-      if (error instanceof ApiAuthorizationError) {
-        const headers = error.status === 401 ? { "www-authenticate": "Bearer" } : {};
-        return json(res, error.status, { code: error.code }, headers);
-      }
+      if (error instanceof ApiAuthorizationError) return json(res, error.status, { code: error.code }, error.status === 401 ? { "www-authenticate": "Bearer" } : {});
       return json(res, 500, { code: "AEGIS-API-500 INTERNAL_ERROR" });
     }
   });
 }
 
-const defaultServer = createApiServer({
-  executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
-  authenticateRequest: createEnvironmentAuthenticator(),
-});
+const defaultServer = createApiServer({ executeTask: async ({ task }) => ({ status: "ACCEPTED", task }), authenticateRequest: createConfiguredAuthenticator() });
 const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
 if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
 export { defaultServer as server };
