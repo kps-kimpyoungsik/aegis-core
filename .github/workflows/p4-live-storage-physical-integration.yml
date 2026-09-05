@@ -42,17 +42,18 @@ jobs:
       AEGIS_TEST_POSTGRES_PASSWORD: aegis_test_only
       AEGIS_TEST_REDIS_HOST: 127.0.0.1
       AEGIS_TEST_REDIS_PORT: '6379'
+      PGPASSWORD: aegis_test_only
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-      - name: Install PostgreSQL JDBC runtime driver
+      - name: Install physical integration clients
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java
+          sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java postgresql-client redis-tools
           test -f /usr/share/java/postgresql.jar
       - name: Compile physical integration test with lint gate
         working-directory: storage-adapters
@@ -75,12 +76,13 @@ jobs:
           declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
           test "$actual" = "$declared"
           echo "PHYSICAL_RUNTIME_GATE=PASS" | tee build/evidence/physical-runtime-gate.txt
-      - name: Record runtime versions
+      - name: Record physical runtime evidence
         working-directory: storage-adapters
         run: |
           set -euo pipefail
-          docker exec "${{ job.services.postgres.id }}" postgres --version | tee build/evidence/postgres-version.txt
-          docker exec "${{ job.services.redis.id }}" redis-server --version | tee build/evidence/redis-version.txt
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc 'select version();' | tee build/evidence/postgres-version.txt
+          redis-cli -h 127.0.0.1 -p 6379 INFO server | grep '^redis_version:' | tr -d '\r' | tee build/evidence/redis-version.txt
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc 'select dataset_id,record_id,record_version from aegis_record order by dataset_id,record_id;' | tee build/evidence/postgres-record-state.txt
       - name: Upload physical integration evidence
         uses: actions/upload-artifact@v4
         with:
