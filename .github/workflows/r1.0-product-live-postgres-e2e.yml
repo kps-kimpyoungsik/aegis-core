@@ -50,9 +50,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java postgresql-client
           test -f /usr/share/java/postgresql.jar
-      - name: Bootstrap product workspace without external package downloads
+      - name: Install product workspace dependencies
         working-directory: product
-        run: npm run bootstrap:workspace
+        run: npm install --ignore-scripts --no-audit --no-fund
       - name: Product deterministic and quality regression
         working-directory: product
         run: |
