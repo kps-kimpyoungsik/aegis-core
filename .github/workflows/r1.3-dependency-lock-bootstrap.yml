@@ -1,0 +1,55 @@
+name: R1.3 Dependency Lock Bootstrap
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.3-dependency-lock-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-lock-bootstrap:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Generate package lock candidate
+        working-directory: product
+        run: |
+          set -euo pipefail
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          test -s package-lock.json
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.first
+      - name: Verify same-input lock stability
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.second
+          cmp /tmp/package-lock.sha256.first /tmp/package-lock.sha256.second
+      - name: Prove npm ci consumes the lock
+        working-directory: product
+        run: |
+          set -euo pipefail
+          rm -rf node_modules
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Upload lock candidate evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.3-package-lock-candidate
+          path: |
+            product/package-lock.json
+            /tmp/package-lock.sha256.first
+            /tmp/package-lock.sha256.second
+          if-no-files-found: error
