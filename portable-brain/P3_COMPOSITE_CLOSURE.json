@@ -1,49 +1,32 @@
 {
   "phase": "P3 Portable Brain",
-  "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
+  "status": "PHYSICALLY_CLOSED_VISIBLE_SCOPE",
   "canonical_owner": "aegis.portable-brain",
   "verified_physical_gates": {
     "P3-01_memory_semantic_model": "VERIFIED_INTEGRATED",
     "P3-02_knowledge_lifecycle": "VERIFIED_INTEGRATED",
     "P3-03_skill_asset_registry": "VERIFIED_INTEGRATED",
     "P3-04_selective_retrieval": "VERIFIED_INTEGRATED",
-    "P3-05_export_import": "VERIFIED_READY_FOR_INTEGRATION"
+    "P3-05_export_import": "VERIFIED_INTEGRATED",
+    "P3-06_composite_closure": "VERIFIED_READY_FOR_INTEGRATION"
   },
-  "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P3-06_composite_closure": "GAP"
-  },
-  "p3_01_evidence": {
-    "assertions": "18/18",
-    "status": "VERIFIED_INTEGRATED"
-  },
-  "p3_02_evidence": {
-    "assertions": "22/22",
-    "status": "VERIFIED_INTEGRATED"
-  },
-  "p3_03_evidence": {
-    "assertions": "20/20",
-    "status": "VERIFIED_INTEGRATED"
-  },
-  "p3_04_evidence": {
-    "assertions": "25/25",
-    "status": "VERIFIED_INTEGRATED"
-  },
-  "p3_05_evidence": {
-    "workflow_run": 33957238884,
-    "workflow_job": 101282673215,
+  "p3_06_evidence": {
+    "workflow_run": 33957378882,
+    "workflow_job": 101283050457,
     "memory_regression": "18/18",
     "knowledge_regression": "22/22",
     "skill_asset_regression": "20/20",
     "retrieval_regression": "25/25",
-    "portability_assertions": "25/25",
+    "portability_regression": "25/25",
+    "composite_assertions": "25/25",
     "evidence_count_guard": "PASS",
     "release_package_guard": "PASS",
     "java": "Temurin 21.0.12+1",
-    "dependency": "java.base only",
-    "jar": "aegis-portable-brain-0.5.0.jar",
-    "jar_sha256": "6cb3680c69f88c0be7d86e8f4ad7d3807613cc4f43fa07c92aa59fc67e4a8ae3",
-    "artifact_id": 9966753814,
-    "artifact_zip_sha256": "929ab8a3bd41b16311fca94950ac7072757636f9c35e77272e4b9aad550eab1a"
+    "dependency": "java.base only plus internal portable-brain packages",
+    "jar": "aegis-portable-brain-0.6.0.jar",
+    "jar_sha256": "3dd52829837f84167f79f111bf57c73640664c5fb2414d7a6fe00881fe0c272e",
+    "artifact_id": 9966796823,
+    "artifact_zip_sha256": "505c52904b8fa35e20bbc75bcddaa4bdcc15e554514331937954fdb1a6c45c57"
   },
   "ownership": {
     "memory_semantics": "aegis.portable-brain",
@@ -58,13 +41,18 @@
   "invariants": [
     "retracted memory and knowledge are excluded from active retrieval",
     "retracted memory, knowledge and assets cannot resurrect through ordinary lifecycle transition",
+    "working memory is not directly promotable",
+    "knowledge promotion remains freshness confidence applicability and provenance gated",
     "skill routing uses manifest triggers and exclusions before loading full detail",
+    "asset promotion remains a candidate decision and not self-authority",
     "retrieval composes existing source-specific selectors rather than duplicating their semantics",
-    "retrieval is explicitly bounded by source limit, item limit and context budget",
+    "retrieval is explicitly bounded by source limit item limit and context budget",
+    "retrieval preserves provenance for admitted context",
     "snapshot schema and package version are explicit and provenance-preserving",
     "snapshot import rejects duplicate canonical identities per category",
     "newer source package import is blocked by default unless explicitly allowed",
     "snapshot transport and physical storage stay outside portable brain semantics",
+    "exact semantic vector and graph engines remain replaceable extensions",
     "portable brain does not own promotion authority",
     "vendor persistence semantics remain outside portable brain"
   ],
@@ -72,8 +60,16 @@
     "java": "21",
     "vendor_sdk": "NONE",
     "framework_dependency": "NONE",
-    "hexagonal_boundary": "PRESERVED"
+    "hexagonal_boundary": "PRESERVED",
+    "package": "aegis-portable-brain-0.6.0.jar"
   },
-  "next_pointer": "Merge P3-05 to canonical main, then P3-06 Composite Closure",
-  "rollback_point": "main@4ae02d5ce1a019e82248fb1bc30ae12fb3c7fa67"
+  "external_gaps": {
+    "global_cross_session_physical_scan": "NOT_EXECUTED",
+    "snapshot_file_db_network_transport": "NOT_EXECUTED_IN_P3_SCOPE",
+    "semantic_vector_graph_vendor_adapters": "NOT_EXECUTED_IN_P3_SCOPE",
+    "main_branch_required_status_checks": "NOT_ENFORCED_REPOSITORY_GOVERNANCE_GAP",
+    "github_actions_node_runtime_deprecation": "OPEN_RELEASE_HARDENING_GAP"
+  },
+  "next_pointer": "After final merge-ref verification and merge, advance to earliest incomplete P4 Storage/Data Plane physical gate",
+  "rollback_point": "main@d07dbdd744fdaf5423ebd1e37a38408bfbd005e3"
 }
