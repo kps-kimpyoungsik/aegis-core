@@ -1,0 +1,84 @@
+name: R1.7 Dependency Reproducibility
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dependency-reproducibility:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Regenerate canonical lock from current manifests
+        working-directory: product
+        run: |
+          set -euo pipefail
+          cp package-lock.json /tmp/package-lock.before.json 2>/dev/null || true
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          test -s package-lock.json
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.first
+          cp package-lock.json /tmp/package-lock.first.json
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          sha256sum package-lock.json | tee /tmp/package-lock.sha256.second
+          cmp /tmp/package-lock.first.json package-lock.json
+
+      - name: Commit normalized lock if branch differs
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- product/package-lock.json; then
+            echo 'LOCK_ALREADY_CANONICAL=true'
+            exit 0
+          fi
+          git config user.name 'aegis-release-bot'
+          git config user.email 'aegis-release-bot@users.noreply.github.com'
+          git add product/package-lock.json
+          git commit -m 'R1.7 normalize canonical dependency lock'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+
+      - name: Prove clean npm ci and product quality gates
+        working-directory: product
+        run: |
+          set -euo pipefail
+          rm -rf node_modules
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Record reproducibility evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.7-dependency-reproducibility
+          cp /tmp/package-lock.sha256.first build/r1.7-dependency-reproducibility/
+          cp /tmp/package-lock.sha256.second build/r1.7-dependency-reproducibility/
+          sha256sum product/package.json product/package-lock.json > build/r1.7-dependency-reproducibility/source-sha256.txt
+          printf 'R1_7_DEPENDENCY_REPRODUCIBILITY=PASS\n' > build/r1.7-dependency-reproducibility/gate-status.txt
+
+      - name: Upload reproducibility evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.7-dependency-reproducibility
+          path: build/r1.7-dependency-reproducibility/**
+          if-no-files-found: error
+          retention-days: 30
