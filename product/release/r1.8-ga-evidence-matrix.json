@@ -1,0 +1,36 @@
+{
+  "releaseId": "aegis-r1.8-ga-evidence-convergence",
+  "baseline": "main@17742e8e409b5734625d2b187c799b6d0613b0b4",
+  "gates": {
+    "G0_SOURCE_ARCHITECTURE": "PASS",
+    "G1_CLEAN_BUILD": "PASS",
+    "G2_ARTIFACT_SUPPLY_CHAIN": "PASS",
+    "G3_SECURITY": "NOT_EXECUTED",
+    "G4_DATA_SAFETY": "NOT_EXECUTED",
+    "G5_STAGING": "PASS",
+    "G6_RELIABILITY_PERFORMANCE": "PASS",
+    "G7_ROLLBACK": "PASS",
+    "G8_PRODUCTION_APPROVAL": "NOT_EXECUTED"
+  },
+  "decision": "NOT_PROMOTED",
+  "missing": [
+    "G3_SECURITY",
+    "G4_DATA_SAFETY",
+    "G8_PRODUCTION_APPROVAL"
+  ],
+  "evidence": {
+    "G0_SOURCE_ARCHITECTURE": ["product-convergence", "ownership/architecture/boundary/duplicate gates"],
+    "G1_CLEAN_BUILD": ["R1.7 canonical package-lock", "npm ci", "lint", "release typecheck", "React production build"],
+    "G2_ARTIFACT_SUPPLY_CHAIN": ["R1.3 CycloneDX SBOM + vulnerability scan", "R1.5 signed provenance/SBOM attestations", "R1.6 OCI signature boundary"],
+    "G5_STAGING": ["R1.4 local production-like staging rollout/rollback drill"],
+    "G6_RELIABILITY_PERFORMANCE": ["R1.7 bounded load/soak reliability evidence"],
+    "G7_ROLLBACK": ["R1.4 rollback drill"]
+  },
+  "boundaryNotes": {
+    "G3_SECURITY": "Customer-grade identity/authentication and penetration/security qualification are not yet executed.",
+    "G4_DATA_SAFETY": "Live PostgreSQL and recovery semantics are proven, but production backup/restore qualification is not yet executed.",
+    "G5_STAGING": "PASS is limited to the executed local production-like staging mechanism; cloud/Kubernetes traffic cutover remains unqualified.",
+    "G6_RELIABILITY_PERFORMANCE": "PASS is limited to the executed bounded CI load/soak gate; no production SLO or capacity claim is made.",
+    "G8_PRODUCTION_APPROVAL": "Explicit production/public-open approval has not been executed."
+  }
+}
