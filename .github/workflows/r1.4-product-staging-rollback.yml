@@ -1,0 +1,77 @@
+name: R1.4 Product Staging Rollback Drill
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.4-product-staging-rollback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  product-staging-rollback:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Validate staging drill asset
+        run: |
+          set -euo pipefail
+          bash -n product/deployment/staging/rollback-drill.sh
+      - name: Build immutable baseline and candidate images
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          BASE_SHA="${PR_BASE_SHA:-}"
+          if [ -z "$BASE_SHA" ]; then BASE_SHA="$(git rev-parse HEAD^)"; fi
+          git worktree add --detach /tmp/aegis-r14-base "$BASE_SHA"
+          docker build --pull \
+            --label "org.opencontainers.image.revision=$BASE_SHA" \
+            --tag aegis-product:r1.4-baseline /tmp/aegis-r14-base/product
+          docker build --pull \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag aegis-product:r1.4-candidate ./product
+          docker image inspect aegis-product:r1.4-baseline --format '{{.Id}}' | tee /tmp/aegis-r14-baseline-image-id.txt
+          docker image inspect aegis-product:r1.4-candidate --format '{{.Id}}' | tee /tmp/aegis-r14-candidate-image-id.txt
+          test "$(cat /tmp/aegis-r14-baseline-image-id.txt)" != "$(cat /tmp/aegis-r14-candidate-image-id.txt)"
+      - name: Execute staging rollout and rollback drill
+        run: |
+          set -euo pipefail
+          bash product/deployment/staging/rollback-drill.sh \
+            aegis-product:r1.4-candidate \
+            aegis-product:r1.4-baseline \
+            build/r1.4-staging-evidence
+      - name: Record source lineage
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          BASE_SHA="${PR_BASE_SHA:-}"
+          if [ -z "$BASE_SHA" ]; then BASE_SHA="$(git rev-parse HEAD^)"; fi
+          printf '%s\n' "$BASE_SHA" > build/r1.4-staging-evidence/rollback-source-revision.txt
+          printf '%s\n' "$GITHUB_SHA" > build/r1.4-staging-evidence/candidate-source-revision.txt
+          sha256sum build/r1.4-staging-evidence/* > build/r1.4-staging-evidence/checksums.sha256
+      - name: Upload staging rollback evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.4-staging-rollback-evidence
+          path: build/r1.4-staging-evidence/**
+          if-no-files-found: error
