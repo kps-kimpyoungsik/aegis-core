@@ -32,8 +32,8 @@ public final class RetrievalKernel {
             double minimumApplicability,
             Instant now) {
         public RetrievalPlan {
-            taskSignature = text(taskSignature, "taskSignature");
-            memoryScope = text(memoryScope, "memoryScope");
+            taskSignature = requireText(taskSignature, "taskSignature");
+            memoryScope = requireText(memoryScope, "memoryScope");
             Objects.requireNonNull(memoryType, "memoryType");
             Objects.requireNonNull(knowledgeScope, "knowledgeScope");
             if (sourceLimit <= 0) throw new IllegalArgumentException("sourceLimit must be > 0");
@@ -54,9 +54,9 @@ public final class RetrievalKernel {
             int contextCost) {
         public RetrievalItem {
             Objects.requireNonNull(kind, "kind");
-            id = text(id, "id");
-            text = text(text, "text");
-            provenanceRef = text(provenanceRef, "provenanceRef");
+            id = requireText(id, "id");
+            text = requireText(text, "text");
+            provenanceRef = requireText(provenanceRef, "provenanceRef");
             unit(score, "score");
             if (contextCost <= 0) throw new IllegalArgumentException("contextCost must be > 0");
         }
@@ -154,7 +154,7 @@ public final class RetrievalKernel {
         return Math.max(1, (value.length() + 31) / 32);
     }
 
-    private static String text(String value, String name) {
+    private static String requireText(String value, String name) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException(name + " must not be blank");
         return value;
     }
