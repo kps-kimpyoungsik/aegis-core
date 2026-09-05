@@ -14,6 +14,8 @@ jobs:
   product-load-soak:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      AEGIS_LOAD_TEST_BEARER_TOKEN: 'aegis-ci-load-test-token-2026'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -30,7 +32,7 @@ jobs:
         working-directory: product
         run: |
           set -euo pipefail
-          npm install --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
           npm run verify:deterministic
           npm run lint
           npm run typecheck:release
@@ -45,6 +47,7 @@ jobs:
             | tee build/r1.7-load-soak/image-id.txt
           docker run -d --rm \
             --name aegis-r1-7-candidate \
+            --env "AEGIS_API_BEARER_TOKEN=${AEGIS_LOAD_TEST_BEARER_TOKEN}" \
             --publish 18080:8080 \
             aegis-product:r1.7-candidate \
             | tee build/r1.7-load-soak/container-id.txt
@@ -63,7 +66,7 @@ jobs:
           curl --fail --silent http://127.0.0.1:18080/health/ready \
             | tee build/r1.7-load-soak/pre-load-ready.json
 
-      - name: Sustained concurrent read-path load
+      - name: Sustained concurrent authenticated read-path load
         env:
           AEGIS_LOAD_BASE_URL: http://127.0.0.1:18080
           AEGIS_LOAD_DURATION_MS: '30000'
@@ -74,6 +77,8 @@ jobs:
           const baseUrl = process.env.AEGIS_LOAD_BASE_URL;
           const durationMs = Number(process.env.AEGIS_LOAD_DURATION_MS);
           const concurrency = Number(process.env.AEGIS_LOAD_CONCURRENCY);
+          const bearerToken = process.env.AEGIS_LOAD_TEST_BEARER_TOKEN;
+          if (typeof bearerToken !== 'string' || bearerToken.length < 16) process.exit(2);
           const deadline = Date.now() + durationMs;
           const latencies = [];
           const statuses = new Map();
@@ -96,11 +101,14 @@ jobs:
                 : sequence % 3 === 1 ? '/health/ready'
                 : '/v1/runtime/snapshot';
               sequence += 1;
+              const protectedRoute = path === '/v1/runtime/snapshot';
+              const headers = { 'x-aegis-load-worker': String(id) };
+              if (protectedRoute) headers.authorization = `Bearer ${bearerToken}`;
               const started = performance.now();
               try {
                 const response = await fetch(`${baseUrl}${path}`, {
                   signal: AbortSignal.timeout(2000),
-                  headers: { 'x-aegis-load-worker': String(id) },
+                  headers,
                 });
                 await response.arrayBuffer();
                 const elapsed = performance.now() - started;
@@ -109,7 +117,7 @@ jobs:
                 total += 1;
                 statuses.set(response.status, (statuses.get(response.status) ?? 0) + 1);
                 if (!response.ok) failures += 1;
-              } catch (error) {
+              } catch {
                 transportErrors += 1;
                 failures += 1;
               }
@@ -122,6 +130,7 @@ jobs:
           const wallMs = performance.now() - wallStarted;
           const result = {
             gate: 'R1.7_LOAD_SOAK_RELIABILITY',
+            authContract: 'static-bearer-test-fixture',
             startedAt,
             finishedAt: new Date().toISOString(),
             configuredDurationMs: durationMs,
@@ -142,6 +151,7 @@ jobs:
             acceptance: {
               minimumRequests: 1000,
               zeroHttpOrTransportFailures: true,
+              protectedReadPathAuthenticated: true,
               latencySloQualification: 'NOT_CLAIMED',
             },
           };
@@ -174,7 +184,8 @@ jobs:
           set -euo pipefail
           {
             echo 'R1_7_LOAD_SOAK_RELIABILITY=PASS'
-            echo 'scope=sustained_concurrent_read_path_reliability'
+            echo 'scope=sustained_concurrent_authenticated_read_path_reliability'
+            echo 'auth_test_fixture=STATIC_BEARER_NON_PRODUCTION'
             echo 'latency_slo_qualification=NOT_CLAIMED'
             echo 'production_capacity_qualification=NOT_CLAIMED'
             echo 'production_kms_custody=BLOCKED_BY_ENVIRONMENT'
@@ -191,6 +202,7 @@ jobs:
             product/Dockerfile \
             product/apps/api-server/index.js \
             product/package.json \
+            product/package-lock.json \
             .github/workflows/r1.7-product-load-soak.yml \
             > build/r1.7-load-soak/source-sha256.txt
 
