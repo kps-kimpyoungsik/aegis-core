@@ -1,9 +1,9 @@
 {
-  "releaseId": "aegis-r0.7-operational-runtime",
+  "releaseId": "aegis-r0.9-application-e2e",
   "status": "CANDIDATE",
-  "sourceRevision": "LOCAL_SANDBOX",
+  "sourceRevision": "PENDING_GIT_COMMIT",
   "contracts": "0.1.0",
-  "packageBaseline": "0.7.0",
+  "packageBaseline": "0.8.0",
   "validation": {
     "ownership": "PASS",
     "contracts": "PASS",
@@ -32,7 +32,10 @@
     "applicationLifecycleIntegration": "PASS",
     "apiRuntime": "PASS",
     "workerDaemon": "PASS",
-    "webProjection": "PASS"
+    "webProjection": "PASS",
+    "workspaceBootstrap": "PASS",
+    "realE2E": "PASS",
+    "e2eFailurePath": "PASS"
   },
-  "rollbackPoint": "aegis-r0.6-application-runtime"
+  "rollbackPoint": "main@aba979151aa9f981271038fcbf8d2688f043e007"
 }
