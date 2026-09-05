@@ -1,0 +1,27 @@
+name: release-convergence
+
+on:
+  pull_request:
+    paths:
+      - "release-convergence/**"
+      - "session-artifacts/**"
+      - ".github/workflows/release-convergence.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "release-convergence/**"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile
+        run: python -m compileall -q release-convergence/src
+      - name: Release convergence regression
+        env:
+          PYTHONPATH: release-convergence/src
+        run: python -m unittest discover -s release-convergence/tests -v
