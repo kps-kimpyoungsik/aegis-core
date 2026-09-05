@@ -1,6 +1,6 @@
 {
   "name": "aegis-release-convergence",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "workspaces": ["packages/*","apps/*"],
@@ -25,6 +25,9 @@
     "verify:harness": "npm run check:ownership && npm run check:boundaries && npm run check:versions && npm run test:harness",
     "test:brain": "node --test tests/portable-brain.test.mjs",
     "verify:brain": "npm run check:ownership && npm run check:boundaries && npm run check:versions && npm run test:brain",
-    "test:application-runtime": "node --test tests/application-runtime.test.mjs"
+    "test:application-runtime": "node --test tests/application-runtime.test.mjs",
+    "test:api-runtime": "node --test tests/api-runtime.test.mjs",
+    "test:worker-daemon": "node --test tests/worker-daemon.test.mjs",
+    "test:web-projection": "node --test tests/web-projection.test.mjs"
   }
 }
