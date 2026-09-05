@@ -1,0 +1,69 @@
+name: R1.1 Product Recovery Interruption
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - 'runtime-kernel/**'
+      - 'storage-adapters/**'
+      - 'integration-gate/**'
+      - '.github/workflows/r1.1-product-recovery-interruption.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-integration:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: aegis_test
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      AEGIS_TEST_POSTGRES_URL: jdbc:postgresql://127.0.0.1:5432/aegis_test
+      AEGIS_TEST_POSTGRES_USER: aegis
+      AEGIS_TEST_POSTGRES_PASSWORD: aegis_test_only
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install product workspace
+        working-directory: product
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Product regression
+        working-directory: product
+        run: |
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Install PostgreSQL JDBC client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java
+      - name: Compile integration gate
+        run: |
+          rm -rf build/r11-recovery
+          mkdir -p build/r11-recovery/classes
+          find runtime-kernel/src/main/java storage-adapters/src/main/java -name '*.java' -print | sort > build/r11-recovery/sources.txt
+          echo integration-gate/src/test/java/aegis/integration/ProductProcessKillRecoveryGateTest.java >> build/r11-recovery/sources.txt
+          javac --release 21 -Xlint:all -Werror -cp /usr/share/java/postgresql.jar -d build/r11-recovery/classes @build/r11-recovery/sources.txt
+      - name: Execute recovery integration gate
+        run: java -cp build/r11-recovery/classes:/usr/share/java/postgresql.jar aegis.integration.ProductProcessKillRecoveryGateTest
