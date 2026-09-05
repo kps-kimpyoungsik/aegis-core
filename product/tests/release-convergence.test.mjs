@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import {
   GAGates,
   evaluateGAPromotion,
@@ -54,4 +55,26 @@ test("public open remains blocked when operational evidence is incomplete", () =
   const evidence = Object.fromEntries(PublicOpenEvidence.map((key) => [key, true]));
   evidence.incidentResponseReady = false;
   assert.equal(evaluatePublicOpen(evidence).decision, "PUBLIC_OPEN_BLOCKED");
+});
+
+test("canonical R1.8 GA evidence matrix matches the fail-closed promotion policy", () => {
+  const matrix = JSON.parse(fs.readFileSync(
+    new URL("../release/r1.8-ga-evidence-matrix.json", import.meta.url),
+    "utf8",
+  ));
+
+  assert.deepEqual(Object.keys(matrix.gates).sort(), [...GAGates].sort());
+
+  const result = evaluateGAPromotion(matrix.gates);
+  assert.equal(result.decision, matrix.decision);
+  assert.deepEqual(result.missing, matrix.missing);
+  assert.deepEqual(result.missing, [
+    "G3_SECURITY",
+    "G4_DATA_SAFETY",
+    "G8_PRODUCTION_APPROVAL",
+  ]);
+
+  assert.equal(matrix.gates.G3_SECURITY, "NOT_EXECUTED");
+  assert.equal(matrix.gates.G4_DATA_SAFETY, "NOT_EXECUTED");
+  assert.equal(matrix.gates.G8_PRODUCTION_APPROVAL, "NOT_EXECUTED");
 });
