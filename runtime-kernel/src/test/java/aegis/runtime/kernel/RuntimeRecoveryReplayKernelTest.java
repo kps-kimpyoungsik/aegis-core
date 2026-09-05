@@ -88,6 +88,6 @@ public final class RuntimeRecoveryReplayKernelTest {
         check(checkpoint.completedEffectIds().contains("effect-1"), "effect provenance retained");
         check(checkpoint.stateVersion() == 7, "state version retained");
 
-        System.out.println("PASS " + passed + "/18");
+        System.out.println("PASS " + passed + "/19");
     }
 }
