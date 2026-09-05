@@ -1,0 +1,19 @@
+{
+  "release": "v4.0.0",
+  "baseline": "v4.0.0-rc2",
+  "source_bundle_sha256": "31a3a872a7390edd7216c927c6e49d60a5954d534a7aa9b33b02c334181dbec9",
+  "gates": {
+    "G0_SOURCE_ARCHITECTURE": "PASS",
+    "G1_CLEAN_BUILD": "NOT_EXECUTED",
+    "G2_ARTIFACT_SUPPLY_CHAIN": "NOT_EXECUTED",
+    "G3_SECURITY": "NOT_EXECUTED",
+    "G4_DATA_SAFETY": "NOT_EXECUTED",
+    "G5_STAGING": "NOT_EXECUTED",
+    "G6_RELIABILITY_PERFORMANCE": "NOT_EXECUTED",
+    "G7_ROLLBACK": "NOT_EXECUTED",
+    "G8_PRODUCTION_APPROVAL": "NOT_EXECUTED"
+  },
+  "decision": "NOT_PROMOTED",
+  "rollback_point": "v4.0.0-rc2",
+  "conflict_guard": "ACTIVE"
+}
