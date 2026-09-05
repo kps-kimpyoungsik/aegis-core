@@ -34,7 +34,7 @@ jobs:
         with:
           name: aegis-runtime-kernel
           path: |
-            runtime-kernel/build/dist/aegis-runtime-kernel-0.6.0.jar
+            runtime-kernel/build/dist/aegis-runtime-kernel-0.7.0.jar
             runtime-kernel/build/evidence/**
           if-no-files-found: error
           retention-days: 30
