@@ -73,8 +73,13 @@ async function readJson(req) {
 function validatePrincipal(principal) {
   if (!principal || typeof principal !== "object") return null;
   if (typeof principal.id !== "string" || principal.id.trim().length === 0) return null;
+  if (typeof principal.tenantId !== "string" || principal.tenantId.trim().length === 0) return null;
   if (!Array.isArray(principal.roles) || !principal.roles.every((role) => typeof role === "string" && role.trim().length > 0)) return null;
-  return Object.freeze({ id: principal.id, roles: Object.freeze([...new Set(principal.roles)]) });
+  return Object.freeze({
+    id: principal.id.trim(),
+    tenantId: principal.tenantId.trim(),
+    roles: Object.freeze([...new Set(principal.roles.map((role) => role.trim()))]),
+  });
 }
 
 function parseRoles(value) {
@@ -95,8 +100,11 @@ function createEnvironmentAuthenticator(env = process.env) {
   const roles = parseRoles(env.AEGIS_API_ROLES);
   if (roles.length === 0) throw new Error("AEGIS-API-011 PRINCIPAL_ROLES_REQUIRED");
 
+  const tenantId = env.AEGIS_API_TENANT_ID?.trim();
+  if (!tenantId) throw new Error("AEGIS-API-012 TENANT_ID_REQUIRED");
+
   const expected = Buffer.from(`Bearer ${token}`, "utf8");
-  const principal = Object.freeze({ id: principalId, roles: Object.freeze(roles) });
+  const principal = Object.freeze({ id: principalId, tenantId, roles: Object.freeze(roles) });
   return async (req) => {
     const authorization = req.headers.authorization;
     if (typeof authorization !== "string") return null;
@@ -106,9 +114,20 @@ function createEnvironmentAuthenticator(env = process.env) {
   };
 }
 
+function requireTenantBinding(req, principal) {
+  const requestedTenant = req.headers["x-aegis-tenant"];
+  if (typeof requestedTenant !== "string" || requestedTenant.trim().length === 0) {
+    throw new ApiAuthorizationError(400, "AEGIS-API-013 TENANT_CONTEXT_REQUIRED");
+  }
+  if (requestedTenant.trim() !== principal.tenantId) {
+    throw new ApiAuthorizationError(403, "AEGIS-API-014 TENANT_MISMATCH");
+  }
+}
+
 async function requirePrincipal(req, authenticateRequest, allowedRoles) {
   const principal = validatePrincipal(await authenticateRequest(req));
   if (!principal) throw new ApiAuthorizationError(401, "AEGIS-API-006 AUTHENTICATION_REQUIRED");
+  requireTenantBinding(req, principal);
   if (!allowedRoles.some((role) => principal.roles.includes(role))) {
     throw new ApiAuthorizationError(403, "AEGIS-API-007 FORBIDDEN");
   }

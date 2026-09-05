@@ -16,7 +16,9 @@ import {
   executeHarness,
 } from '@aegis/harness-runtime';
 
-const executorAuthenticator = async () => ({ id:'principal:e2e-operator', roles:['TASK_EXECUTOR'] });
+const E2E_TENANT = 'tenant:e2e';
+const executorAuthenticator = async () => ({ id:'principal:e2e-operator', tenantId:E2E_TENANT, roles:['TASK_EXECUTOR'] });
+const tenantHeaders = (extra = {}) => ({ 'x-aegis-tenant':E2E_TENANT, ...extra });
 
 async function withServer(options, fn) {
   const server = createApiServer(options);
@@ -56,10 +58,10 @@ const reusableMemory = createMemoryItem({
   content: { lesson: 'reuse verified release path' }, provenance: { sourceRef: 'episode:r0.7', sourceType: 'PAST_SUCCESS' },
 });
 
-test('E2E success: authenticated API -> application -> harness -> episode/event snapshot -> React projection', async () => {
+test('E2E success: tenant-bound authenticated API -> application -> harness -> episode/event snapshot -> React projection', async () => {
   const runtime = createTaskExecutionUseCase({ runHarness: makeHarness(), memoryItems: [reusableMemory], retrievalPolicy: { maxItems: 1 } });
   await withServer({ executeTask: runtime.executeTask, authenticateRequest:executorAuthenticator, getSnapshot: runtime.getSnapshot, idFactory: () => 'e2e-success' }, async (base) => {
-    const create = await fetch(`${base}/v1/tasks`, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ goal:'ship e2e', owner:'ops', responsibility:'release', retrievalQuery:{ key:'release' } }) });
+    const create = await fetch(`${base}/v1/tasks`, { method:'POST', headers:tenantHeaders({'content-type':'application/json'}), body:JSON.stringify({ goal:'ship e2e', owner:'ops', responsibility:'release', retrievalQuery:{ key:'release' } }) });
     assert.equal(create.status, 202);
     const result = await create.json();
     assert.equal(result.status, 'COMPLETED');
@@ -67,7 +69,7 @@ test('E2E success: authenticated API -> application -> harness -> episode/event 
     assert.equal(result.memory.kind, 'EPISODIC');
     assert.equal(result.harnessResult.provenance.memory[0], 'mem:release');
 
-    const snapshotResponse = await fetch(`${base}/v1/runtime/snapshot`);
+    const snapshotResponse = await fetch(`${base}/v1/runtime/snapshot`, { headers:tenantHeaders() });
     assert.equal(snapshotResponse.status, 200);
     const snapshot = await snapshotResponse.json();
     assert.equal(snapshot.tasks[0].status, 'COMPLETED');
@@ -79,17 +81,17 @@ test('E2E success: authenticated API -> application -> harness -> episode/event 
   });
 });
 
-test('E2E failure: authenticated API -> authority deny -> FAILED + failure memory -> snapshot -> React failure projection', async () => {
+test('E2E failure: tenant-bound authenticated API -> authority deny -> FAILED + failure memory -> React failure projection', async () => {
   const runtime = createTaskExecutionUseCase({ runHarness: makeHarness({ deny: true }) });
   await withServer({ executeTask: runtime.executeTask, authenticateRequest:executorAuthenticator, getSnapshot: runtime.getSnapshot, idFactory: () => 'e2e-failure' }, async (base) => {
-    const create = await fetch(`${base}/v1/tasks`, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ goal:'deny unsafe execution', owner:'ops', responsibility:'release' }) });
+    const create = await fetch(`${base}/v1/tasks`, { method:'POST', headers:tenantHeaders({'content-type':'application/json'}), body:JSON.stringify({ goal:'deny unsafe execution', owner:'ops', responsibility:'release' }) });
     assert.equal(create.status, 422);
     const result = await create.json();
     assert.equal(result.status, 'FAILED');
     assert.equal(result.memory.kind, 'FAILURE');
     assert.equal(result.memory.content.code, 'AEGIS-HARNESS-001');
 
-    const snapshotResponse = await fetch(`${base}/v1/runtime/snapshot`);
+    const snapshotResponse = await fetch(`${base}/v1/runtime/snapshot`, { headers:tenantHeaders() });
     assert.equal(snapshotResponse.status, 200);
     const snapshot = await snapshotResponse.json();
     assert.equal(snapshot.tasks[0].status, 'FAILED');

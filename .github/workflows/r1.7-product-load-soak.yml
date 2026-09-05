@@ -17,6 +17,7 @@ jobs:
     env:
       AEGIS_CI_BEARER_TOKEN: r1.10-ci-load-bearer-token-not-secret-0001
       AEGIS_CI_PRINCIPAL_ID: principal:r1.7-load-soak
+      AEGIS_CI_TENANT_ID: tenant:r1.7-load-soak
       AEGIS_CI_ROLES: RUNTIME_VIEWER
     steps:
       - name: Checkout
@@ -34,7 +35,7 @@ jobs:
         working-directory: product
         run: |
           set -euo pipefail
-          npm install --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
           npm run verify:deterministic
           npm run lint
           npm run typecheck:release
@@ -52,6 +53,7 @@ jobs:
             --publish 18080:8080 \
             --env AEGIS_API_BEARER_TOKEN="${AEGIS_CI_BEARER_TOKEN}" \
             --env AEGIS_API_PRINCIPAL_ID="${AEGIS_CI_PRINCIPAL_ID}" \
+            --env AEGIS_API_TENANT_ID="${AEGIS_CI_TENANT_ID}" \
             --env AEGIS_API_ROLES="${AEGIS_CI_ROLES}" \
             aegis-product:r1.7-candidate \
             | tee build/r1.7-load-soak/container-id.txt
@@ -71,6 +73,7 @@ jobs:
             | tee build/r1.7-load-soak/pre-load-ready.json
           curl --fail --silent \
             --header "Authorization: Bearer ${AEGIS_CI_BEARER_TOKEN}" \
+            --header "X-AEGIS-Tenant: ${AEGIS_CI_TENANT_ID}" \
             http://127.0.0.1:18080/v1/runtime/snapshot \
             | tee build/r1.7-load-soak/pre-load-authenticated-snapshot.json
 
@@ -86,6 +89,7 @@ jobs:
           const durationMs = Number(process.env.AEGIS_LOAD_DURATION_MS);
           const concurrency = Number(process.env.AEGIS_LOAD_CONCURRENCY);
           const bearerToken = process.env.AEGIS_CI_BEARER_TOKEN;
+          const tenantId = process.env.AEGIS_CI_TENANT_ID;
           const deadline = Date.now() + durationMs;
           const latencies = [];
           const statuses = new Map();
@@ -111,7 +115,10 @@ jobs:
               const started = performance.now();
               try {
                 const headers = { 'x-aegis-load-worker': String(id) };
-                if (path === '/v1/runtime/snapshot') headers.authorization = `Bearer ${bearerToken}`;
+                if (path === '/v1/runtime/snapshot') {
+                  headers.authorization = `Bearer ${bearerToken}`;
+                  headers['x-aegis-tenant'] = tenantId;
+                }
                 const response = await fetch(`${baseUrl}${path}`, {
                   signal: AbortSignal.timeout(2000),
                   headers,
@@ -156,7 +163,7 @@ jobs:
             acceptance: {
               minimumRequests: 1000,
               zeroHttpOrTransportFailures: true,
-              authenticatedSnapshotPath: true,
+              authenticatedTenantBoundSnapshotPath: true,
               latencySloQualification: 'NOT_CLAIMED',
             },
           };
@@ -173,6 +180,7 @@ jobs:
             | tee build/r1.7-load-soak/post-load-ready.json
           curl --fail --silent \
             --header "Authorization: Bearer ${AEGIS_CI_BEARER_TOKEN}" \
+            --header "X-AEGIS-Tenant: ${AEGIS_CI_TENANT_ID}" \
             http://127.0.0.1:18080/v1/runtime/snapshot \
             | tee build/r1.7-load-soak/post-load-authenticated-snapshot.json
           docker inspect aegis-r1-7-candidate \
@@ -193,8 +201,9 @@ jobs:
           set -euo pipefail
           {
             echo 'R1_7_LOAD_SOAK_RELIABILITY=PASS'
-            echo 'scope=sustained_concurrent_authenticated_read_path_reliability'
+            echo 'scope=sustained_concurrent_authenticated_tenant_bound_read_path_reliability'
             echo 'authentication_adapter=CI_BOOTSTRAP_BEARER'
+            echo 'tenant_binding=REQUIRED'
             echo 'authentication_secret_class=SYNTHETIC_NON_PRODUCTION'
             echo 'latency_slo_qualification=NOT_CLAIMED'
             echo 'production_capacity_qualification=NOT_CLAIMED'
@@ -213,6 +222,7 @@ jobs:
             product/Dockerfile \
             product/apps/api-server/index.js \
             product/package.json \
+            product/package-lock.json \
             .github/workflows/r1.7-product-load-soak.yml \
             > build/r1.7-load-soak/source-sha256.txt
 

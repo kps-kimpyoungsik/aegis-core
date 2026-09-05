@@ -1,0 +1,120 @@
+{
+  "gate": "R1.11_TENANT_BOUND_PRINCIPAL",
+  "status": "VERIFIED_READY_FOR_EXACT_HEAD_REGRESSION",
+  "canonicalOwner": "api-adapter",
+  "rollbackPoint": "main@b46eb42f0305b269e110d840f890d459bac493ec",
+  "pullRequest": 60,
+  "candidateBeforeEvidenceLedger": "7d8c62bd4712505a0547c142c3b5b366be633a10",
+  "decision": ["REUSE", "ADAPT", "COMPOSE", "VERIFY", "COMPARE"],
+  "crossSessionReconciliation": {
+    "pr56": "SUPERSEDED_BY_R1_10_PR57",
+    "pr58": "DRAFT_REFERENCE_TENANT_IDEA_ONLY_NULL_SECURITY_POLICY_PATH_REJECTED",
+    "globalCrossSessionScan": "NOT_EXECUTED",
+    "visibleRepositoryAndPullRequestScan": "EXECUTED"
+  },
+  "capability": {
+    "id": "AEGIS.API.TENANT_BOUND_PRINCIPAL",
+    "responsibility": [
+      "bind verified principal to a tenant identifier",
+      "require explicit tenant request context on protected routes",
+      "reject tenant mismatch before application execution",
+      "preserve canonical R1.10 RBAC and fail-closed authentication"
+    ],
+    "contracts": {
+      "principal": {"id": "non-empty string", "tenantId": "non-empty string", "roles": "non-empty string[]"},
+      "requestTenantHeader": "X-AEGIS-Tenant",
+      "bindingRule": "request tenant must equal principal.tenantId",
+      "taskCommandRole": "TASK_EXECUTOR",
+      "runtimeSnapshotRoles": ["RUNTIME_VIEWER", "TASK_EXECUTOR"]
+    },
+    "authority": {
+      "owner": "api-adapter",
+      "rootAuthorityOwner": false,
+      "securityPolicyOwner": false,
+      "independentVerifierOwner": false,
+      "dataPlaneOwner": false
+    },
+    "dataOwnership": {
+      "principalTenantTransport": "api-adapter",
+      "taskOwnerSemantics": "UNCHANGED",
+      "crossTenantRowIsolation": "NOT_OWNED_NOT_CLAIMED"
+    },
+    "failureModel": {
+      "unauthenticated": "REJECT_401",
+      "principalWithoutTenant": "REJECT_401",
+      "missingTenantContext": "REJECT_400",
+      "tenantMismatch": "REJECT_403",
+      "insufficientRole": "REJECT_403",
+      "missingBootstrapTenant": "STARTUP_BLOCK"
+    }
+  },
+  "deterministicEvidence": {
+    "tests": 65,
+    "passed": 65,
+    "failed": 0,
+    "ownershipCheck": "PASS_21_CANONICAL_RESPONSIBILITIES",
+    "contractCheck": "PASS_3_SCHEMAS",
+    "architectureCheck": "PASS",
+    "packageBoundaryCheck": "PASS_20_PACKAGES_APPS",
+    "duplicateCheck": "PASS_50_PUBLIC_SYMBOLS",
+    "packageVersionCheck": "PASS_20_PACKAGE_VERSIONS",
+    "strictConfigCheck": "PASS_7_FLAGS",
+    "releaseManifestCheck": "PASS_59_GATES",
+    "lint": "PASS",
+    "releaseTypecheck": "PASS",
+    "reactSpaProductionBuild": "PASS"
+  },
+  "negativeEvidence": [
+    "unauthenticated request rejected before tenant evaluation/application execution",
+    "principal without tenant identity rejected",
+    "authenticated request without tenant header rejected with 400",
+    "tenant mismatch rejected with 403 before application execution",
+    "viewer mutation denied",
+    "forged bearer rejected",
+    "internal error disclosure remains suppressed"
+  ],
+  "tenantBoundLoadSoakEvidence": {
+    "workflowRun": 33998571399,
+    "job": 101393266587,
+    "durationMs": 30000,
+    "measuredWallMs": 30001.071,
+    "concurrency": 32,
+    "totalRequests": 160998,
+    "failures": 0,
+    "transportErrors": 0,
+    "successRate": 100,
+    "requestsPerSecond": 5366.408,
+    "statusCounts": {"200": 160998},
+    "latencyMs": {"p50": 5.262, "p95": 9.468, "p99": 13.544, "max": 85.828},
+    "latencySloQualification": "NOT_CLAIMED",
+    "candidateImageSha256": "2faff00b91669195bc5f34075ce73eb4c43f40bd7c0785b8b2ab86356beeb0cf",
+    "artifactId": 9978797526,
+    "artifactSha256": "de1126eed955ca1f38349e785dd42adbc90bbb5fa66bee237ef7a9abf0641f6b",
+    "installMode": "NPM_CI_CANONICAL_LOCK"
+  },
+  "releaseRegressionBeforeEvidenceLedger": {
+    "expectedWorkflows": 10,
+    "successfulWorkflows": 10,
+    "result": "PASS"
+  },
+  "boundaries": {
+    "oidcDiscovery": "NOT_EXECUTED",
+    "jwksJwtSignatureVerification": "NOT_EXECUTED",
+    "issuerAudienceValidation": "NOT_EXECUTED",
+    "tokenRevocation": "NOT_EXECUTED",
+    "productionIdpTenantProvisioning": "NOT_EXECUTED",
+    "crossTenantDataPlaneRowIsolation": "NOT_EXECUTED",
+    "waf": "NOT_EXECUTED",
+    "rateLimiting": "NOT_EXECUTED",
+    "externalPenetrationTest": "NOT_EXECUTED",
+    "ddosCapacityQualification": "NOT_EXECUTED",
+    "productionKmsCustody": "BLOCKED_BY_ENVIRONMENT",
+    "productionRegistrySigning": "BLOCKED_BY_ENVIRONMENT",
+    "commercialGa": "BLOCKED"
+  },
+  "provenance": {
+    "sourceRepository": "kps-kimpyoungsik/aegis-core",
+    "sourceBranch": "workstream/r1-11-tenant-bound-principal",
+    "evidencePolicy": "Compare Before Promote + Fail Closed"
+  }
+}

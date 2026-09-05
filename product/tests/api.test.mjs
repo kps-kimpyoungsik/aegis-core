@@ -3,10 +3,11 @@ import assert from "node:assert/strict";
 process.env.NODE_ENV="test";
 process.env.AEGIS_API_BEARER_TOKEN="r1.10-test-bearer-token-not-secret-0001";
 process.env.AEGIS_API_PRINCIPAL_ID="principal:api-test";
+process.env.AEGIS_API_TENANT_ID="tenant-api-test";
 process.env.AEGIS_API_ROLES="RUNTIME_VIEWER";
 const { server } = await import("../apps/api-server/index.js");
 
-test("health endpoints remain public and configured bearer unlocks protected snapshot", async (t)=>{
+test("health endpoints remain public and configured bearer plus tenant unlock protected snapshot", async (t)=>{
   await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
   t.after(()=>server.close());
   const {port}=server.address();
@@ -22,8 +23,18 @@ test("health endpoints remain public and configured bearer unlocks protected sna
   const unauthenticated=await fetch(`${base}/v1/runtime/snapshot`);
   assert.equal(unauthenticated.status,401);
 
-  const authenticated=await fetch(`${base}/v1/runtime/snapshot`, {
+  const missingTenant=await fetch(`${base}/v1/runtime/snapshot`, {
     headers:{authorization:`Bearer ${process.env.AEGIS_API_BEARER_TOKEN}`},
+  });
+  assert.equal(missingTenant.status,400);
+
+  const mismatchedTenant=await fetch(`${base}/v1/runtime/snapshot`, {
+    headers:{authorization:`Bearer ${process.env.AEGIS_API_BEARER_TOKEN}`,"x-aegis-tenant":"tenant-other"},
+  });
+  assert.equal(mismatchedTenant.status,403);
+
+  const authenticated=await fetch(`${base}/v1/runtime/snapshot`, {
+    headers:{authorization:`Bearer ${process.env.AEGIS_API_BEARER_TOKEN}`,"x-aegis-tenant":process.env.AEGIS_API_TENANT_ID},
   });
   assert.equal(authenticated.status,200);
 });
