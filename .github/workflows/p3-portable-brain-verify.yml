@@ -1,0 +1,40 @@
+name: P3 Portable Brain Verify
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "portable-brain/**"
+      - ".github/workflows/p3-portable-brain-verify.yml"
+  push:
+    branches:
+      - "workstream/p3-portable-brain-*"
+    paths:
+      - "portable-brain/**"
+      - ".github/workflows/p3-portable-brain-verify.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Verify Portable Brain
+        working-directory: portable-brain
+        run: bash verify.sh
+      - name: Upload portable brain package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-portable-brain
+          path: |
+            portable-brain/build/dist/aegis-portable-brain-0.1.0.jar
+            portable-brain/build/evidence/**
+          if-no-files-found: error
+          retention-days: 30
