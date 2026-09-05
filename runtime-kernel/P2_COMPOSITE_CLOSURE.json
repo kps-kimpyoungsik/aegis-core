@@ -1,6 +1,6 @@
 {
   "phase": "P2 Runtime Kernel",
-  "status": "COMPOSITE_REGRESSION_PENDING",
+  "status": "COMMERCIAL_CLOSED_PENDING_INTEGRATION",
   "canonical_owner": "aegis.work-runtime",
   "verified_physical_gates": {
     "P2-01_execution_context_state_machine": "VERIFIED_INTEGRATED",
@@ -13,7 +13,28 @@
     "P2-08_rollback_coordination": "VERIFIED_INTEGRATED"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {},
-  "closure_rule": "Run full P2 composite regression from canonical main-derived tree. Promote to COMMERCIAL_CLOSED only if every P2 regression, Evidence Count Guard, dependency inspection and artifact packaging pass on that tree.",
+  "composite_evidence": {
+    "source_base_main": "a6e48606961ee9c7b50d37090171d207af6ef19c",
+    "workflow_run": 33936460877,
+    "workflow_job": 101225242756,
+    "java": "Temurin 21.0.12+1",
+    "assertions": {
+      "P2-01_execution_state": "16/16",
+      "P2-02_dispatch": "17/17",
+      "P2-03_recovery_replay": "19/19",
+      "P2-04_resource_control": "18/18",
+      "P2-05_06_validation_idempotency": "14/14",
+      "P2-07_trace_audit": "16/16",
+      "P2-08_rollback": "17/17"
+    },
+    "evidence_count_guard": "PASS",
+    "dependency": "java.base only",
+    "jar": "aegis-runtime-kernel-0.8.0.jar",
+    "jar_sha256": "3ba10d7cf0a62513158b9880719e47c947bc7ad96b4ee47e046e5fd9e995a8d9",
+    "artifact_id": 9960330947,
+    "artifact_zip_sha256": "f6788fefd13eda0813fb0e030bd0dec0044a8b478bae59ebf31bb7370e2cef71"
+  },
+  "closure_rule": "Composite regression passed on a canonical-main-derived tree. Merge this evidence-only closure delta and verify the final main closure manifest before declaring COMMERCIAL_CLOSED.",
   "failure_signatures": [
     {
       "id": "TEST_EVIDENCE_DECLARED_COUNT_DRIFT",
@@ -47,6 +68,12 @@
     "trace_sensitive_attribute_guard": "ACTIVE",
     "rollback_authority_gate": "ACTIVE"
   },
-  "next_pointer": "P2 full composite regression",
+  "compatibility": {
+    "java": "21",
+    "vendor_sdk": "NONE",
+    "framework_dependency": "NONE",
+    "hexagonal_boundary": "PRESERVED"
+  },
+  "next_pointer": "Merge commercial closure evidence to main, verify final main manifest, then advance to earliest unfinished commercial gate",
   "rollback_point": "main@a6e48606961ee9c7b50d37090171d207af6ef19c"
 }
