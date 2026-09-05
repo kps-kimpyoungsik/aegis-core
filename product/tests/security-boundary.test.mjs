@@ -14,7 +14,7 @@ const policy = {
   verifyBearerToken: async (token) => {
     if (token === "operator-token") return { subject:"user-1", tenantId:"tenant-a", roles:["operator"] };
     if (token === "viewer-token") return { subject:"user-2", tenantId:"tenant-a", roles:["viewer"] };
-    throw new Error("invalid token");
+    throw new Error("invalid token secret detail");
   },
 };
 
@@ -34,6 +34,18 @@ test("protected task endpoint rejects missing bearer before application executio
     const response = await taskRequest(base, null);
     assert.equal(response.status, 401);
     assert.deepEqual(await response.json(), { code:"AEGIS-SEC-001 BEARER_REQUIRED" });
+    assert.equal(calls, 0);
+  });
+});
+
+test("rejected bearer is normalized to 401 without verifier detail leakage", async () => {
+  let calls = 0;
+  await withServer({ securityPolicy:policy, executeTask:async()=>{ calls += 1; return { status:"COMPLETED" }; } }, async (base) => {
+    const response = await taskRequest(base, "rejected-token");
+    assert.equal(response.status, 401);
+    const body = await response.json();
+    assert.deepEqual(body, { code:"AEGIS-SEC-008 TOKEN_REJECTED" });
+    assert.equal(JSON.stringify(body).includes("secret detail"), false);
     assert.equal(calls, 0);
   });
 });
