@@ -18,23 +18,31 @@ fi
 
 javac --release 21 -Xlint:all -Werror -d "$CLASSES" "${SOURCES[@]}"
 
-output="$(java -cp "$CLASSES" aegis.data.registry.DatasetRegistryKernelTest)"
-printf '%s\n' "$output" | tee "$EVIDENCE/dataset-registry-count.txt"
-pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
-if [[ -z "$pass_line" ]]; then
-  echo "EVIDENCE_GUARD_FAIL: missing PASS n/n marker" >&2
-  exit 31
-fi
-actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
-declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
-if [[ "$actual" != "$declared" ]]; then
-  echo "EVIDENCE_GUARD_FAIL: TEST_EVIDENCE_DECLARED_COUNT_DRIFT actual=$actual declared=$declared" >&2
-  exit 32
-fi
+run_and_verify_count() {
+  local class_name="$1"
+  local evidence_file="$2"
+  local output pass_line actual declared
+  output="$(java -cp "$CLASSES" "$class_name")"
+  printf '%s\n' "$output" | tee "$EVIDENCE/$evidence_file"
+  pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
+  if [[ -z "$pass_line" ]]; then
+    echo "EVIDENCE_GUARD_FAIL: missing PASS n/n marker for $class_name" >&2
+    return 31
+  fi
+  actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
+  declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
+  if [[ "$actual" != "$declared" ]]; then
+    echo "EVIDENCE_GUARD_FAIL: TEST_EVIDENCE_DECLARED_COUNT_DRIFT $class_name actual=$actual declared=$declared" >&2
+    return 32
+  fi
+}
+
+run_and_verify_count aegis.data.registry.DatasetRegistryKernelTest dataset-registry-count.txt
+run_and_verify_count aegis.data.consistency.RecordEventProjectionKernelTest consistency-kernel-count.txt
 
 echo "TEST_EVIDENCE_COUNT_GUARD=PASS" | tee "$EVIDENCE/evidence-count-guard.txt"
 
-JAR="$DIST/aegis-data-plane-0.1.0.jar"
+JAR="$DIST/aegis-data-plane-0.2.0.jar"
 jar --create --file "$JAR" -C "$CLASSES" .
 jdeps "$JAR" | tee "$EVIDENCE/jdeps.txt"
 sha256sum "$JAR" | tee "$EVIDENCE/sha256.txt"
