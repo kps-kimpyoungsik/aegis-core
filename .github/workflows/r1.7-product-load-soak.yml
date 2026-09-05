@@ -1,0 +1,204 @@
+name: R1.7 Product Load Soak Reliability
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.7-product-load-soak.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  product-load-soak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Build and start candidate container
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.7-load-soak
+          docker build --pull --tag aegis-product:r1.7-candidate ./product
+          docker image inspect aegis-product:r1.7-candidate --format '{{.Id}}' \
+            | tee build/r1.7-load-soak/image-id.txt
+          docker run -d --rm \
+            --name aegis-r1-7-candidate \
+            --publish 18080:8080 \
+            aegis-product:r1.7-candidate \
+            | tee build/r1.7-load-soak/container-id.txt
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:18080/health/ready >/dev/null; then
+              break
+            fi
+            if [ "${attempt}" -eq 60 ]; then
+              docker logs aegis-r1-7-candidate | tee build/r1.7-load-soak/container-startup.log
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18080/health/live \
+            | tee build/r1.7-load-soak/pre-load-live.json
+          curl --fail --silent http://127.0.0.1:18080/health/ready \
+            | tee build/r1.7-load-soak/pre-load-ready.json
+
+      - name: Sustained concurrent read-path load
+        env:
+          AEGIS_LOAD_BASE_URL: http://127.0.0.1:18080
+          AEGIS_LOAD_DURATION_MS: '30000'
+          AEGIS_LOAD_CONCURRENCY: '32'
+        run: |
+          set -euo pipefail
+          node <<'NODE' | tee build/r1.7-load-soak/load-result.json
+          const baseUrl = process.env.AEGIS_LOAD_BASE_URL;
+          const durationMs = Number(process.env.AEGIS_LOAD_DURATION_MS);
+          const concurrency = Number(process.env.AEGIS_LOAD_CONCURRENCY);
+          const deadline = Date.now() + durationMs;
+          const latencies = [];
+          const statuses = new Map();
+          let total = 0;
+          let failures = 0;
+          let transportErrors = 0;
+          let maxLatency = 0;
+
+          const percentile = (values, p) => {
+            if (values.length === 0) return null;
+            const sorted = [...values].sort((a, b) => a - b);
+            const index = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
+            return Number(sorted[index].toFixed(3));
+          };
+
+          async function worker(id) {
+            let sequence = 0;
+            while (Date.now() < deadline) {
+              const path = sequence % 3 === 0 ? '/health/live'
+                : sequence % 3 === 1 ? '/health/ready'
+                : '/v1/runtime/snapshot';
+              sequence += 1;
+              const started = performance.now();
+              try {
+                const response = await fetch(`${baseUrl}${path}`, {
+                  signal: AbortSignal.timeout(2000),
+                  headers: { 'x-aegis-load-worker': String(id) },
+                });
+                await response.arrayBuffer();
+                const elapsed = performance.now() - started;
+                latencies.push(elapsed);
+                if (elapsed > maxLatency) maxLatency = elapsed;
+                total += 1;
+                statuses.set(response.status, (statuses.get(response.status) ?? 0) + 1);
+                if (!response.ok) failures += 1;
+              } catch (error) {
+                transportErrors += 1;
+                failures += 1;
+              }
+            }
+          }
+
+          const startedAt = new Date().toISOString();
+          const wallStarted = performance.now();
+          await Promise.all(Array.from({ length: concurrency }, (_, index) => worker(index)));
+          const wallMs = performance.now() - wallStarted;
+          const result = {
+            gate: 'R1.7_LOAD_SOAK_RELIABILITY',
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            configuredDurationMs: durationMs,
+            measuredWallMs: Number(wallMs.toFixed(3)),
+            concurrency,
+            totalRequests: total,
+            failures,
+            transportErrors,
+            successRate: total > 0 ? Number((((total - failures) / total) * 100).toFixed(6)) : 0,
+            requestsPerSecond: wallMs > 0 ? Number(((total * 1000) / wallMs).toFixed(3)) : 0,
+            statusCounts: Object.fromEntries([...statuses.entries()].sort(([a], [b]) => a - b)),
+            latencyMs: {
+              p50: percentile(latencies, 50),
+              p95: percentile(latencies, 95),
+              p99: percentile(latencies, 99),
+              max: latencies.length ? Number(maxLatency.toFixed(3)) : null,
+            },
+            acceptance: {
+              minimumRequests: 1000,
+              zeroHttpOrTransportFailures: true,
+              latencySloQualification: 'NOT_CLAIMED',
+            },
+          };
+          console.log(JSON.stringify(result, null, 2));
+          if (total < 1000 || failures !== 0 || transportErrors !== 0) process.exit(1);
+          NODE
+
+      - name: Post-load health and resource evidence
+        run: |
+          set -euo pipefail
+          curl --fail --silent http://127.0.0.1:18080/health/live \
+            | tee build/r1.7-load-soak/post-load-live.json
+          curl --fail --silent http://127.0.0.1:18080/health/ready \
+            | tee build/r1.7-load-soak/post-load-ready.json
+          docker inspect aegis-r1-7-candidate \
+            --format '{{json .State.Health}}' \
+            | tee build/r1.7-load-soak/docker-health.json
+          docker stats --no-stream --format '{{json .}}' aegis-r1-7-candidate \
+            | tee build/r1.7-load-soak/docker-stats.json
+          docker logs aegis-r1-7-candidate \
+            > build/r1.7-load-soak/container.log 2>&1
+          if grep -E 'UnhandledPromiseRejection|FATAL|heap out of memory|uncaughtException' \
+            build/r1.7-load-soak/container.log; then
+            echo 'fatal runtime signature detected'
+            exit 1
+          fi
+
+      - name: Record R1.7 boundary evidence
+        run: |
+          set -euo pipefail
+          {
+            echo 'R1_7_LOAD_SOAK_RELIABILITY=PASS'
+            echo 'scope=sustained_concurrent_read_path_reliability'
+            echo 'latency_slo_qualification=NOT_CLAIMED'
+            echo 'production_capacity_qualification=NOT_CLAIMED'
+            echo 'production_kms_custody=BLOCKED_BY_ENVIRONMENT'
+            echo 'production_registry_signing=BLOCKED_BY_ENVIRONMENT'
+            echo "commit=${GITHUB_SHA}"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "runner_arch=${RUNNER_ARCH}"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "docker=$(docker --version)"
+          } > build/r1.7-load-soak/environment.txt
+          sha256sum \
+            product/Dockerfile \
+            product/apps/api-server/index.js \
+            product/package.json \
+            .github/workflows/r1.7-product-load-soak.yml \
+            > build/r1.7-load-soak/source-sha256.txt
+
+      - name: Upload R1.7 load-soak evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.7-load-soak-evidence
+          path: build/r1.7-load-soak/**
+          if-no-files-found: error
+          retention-days: 30
