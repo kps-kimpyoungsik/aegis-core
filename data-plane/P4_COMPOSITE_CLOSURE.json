@@ -1,16 +1,14 @@
 {
   "phase": "P4 Storage / Data Plane",
-  "status": "P4_05_CANDIDATE_PENDING_FINAL_HEAD_CI",
+  "status": "PHYSICALLY_CLOSED_VISIBLE_SCOPE",
   "canonical_owner": "aegis.data-plane",
   "verified_physical_gates": {
     "P4-01_dataset_registry": "VERIFIED_INTEGRATED",
     "P4-02_record_event_projection_consistency": "VERIFIED_INTEGRATED",
     "P4-03_migration_retention_backup_restore": "VERIFIED_INTEGRATED",
     "P4-04_live_storage_adapters": "VERIFIED_INTEGRATED",
-    "P4-RECOVERY-LIVE-001": "VERIFIED_READY_FOR_INTEGRATION"
-  },
-  "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P4-05_composite_closure": "CANDIDATE_PENDING_FINAL_HEAD_CI"
+    "P4-RECOVERY-LIVE-001": "VERIFIED_READY_FOR_INTEGRATION",
+    "P4-05_composite_closure": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "p4_03_evidence": {
     "registry_regression": "23/23",
@@ -51,6 +49,15 @@
     "artifact_id": 9969487133,
     "artifact_sha256": "8f3f7300af056fdaa728102d633ba82dee5efea9131a869e3c8fa908852cd946"
   },
+  "final_evidence_bearing_head_validation": {
+    "head": "d6b812ebf8ec07f7cad424bf207ca8461c324dca",
+    "p4_data_plane_verify_run": 33966231720,
+    "p4_data_plane_verify": "PASS",
+    "p4_live_storage_run": 33966231682,
+    "p4_live_storage": "PASS",
+    "p4_recovery_live_run": 33966231673,
+    "p4_recovery_live": "PASS"
+  },
   "ownership": {
     "dataset_registry_semantics": "aegis.data-plane",
     "record_event_projection_consistency": "aegis.data-plane",
@@ -82,7 +89,7 @@
     "hexagonal_boundary": "PRESERVED",
     "existing_p4_contracts": "UNCHANGED"
   },
-  "promotion_gate": "Final evidence-bearing PR head must rerun P4 Data Plane Verify + P4 Live Storage Integration + P4 Recovery Live Drill successfully before merge.",
-  "next_pointer": "Final evidence-bearing head CI -> merge P4-05 composite closure -> advance to next Commercial Release Gate",
+  "promotion_gate": "This closure status itself must pass P4 Data Plane Verify + P4 Live Storage Integration + P4 Recovery Live Drill before merge.",
+  "next_pointer": "After final closure-status head CI and merge, advance to the next Commercial Release Gate without reopening P4 unless regression evidence appears.",
   "rollback_point": "main@10fc5ff76d0b753b2fb7227e01e0c23319cfbacb"
 }
