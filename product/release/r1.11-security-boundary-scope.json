@@ -1,0 +1,25 @@
+{
+  "gate": "R1.11_IDENTITY_AUTHORITY_BOUNDARY",
+  "baseline": "ec933eb9b951f47f267f2cb7a210293f29927027",
+  "executed_scope": [
+    "bearer credential parsing",
+    "verifier port invocation",
+    "subject tenant roles principal normalization",
+    "tenant binding enforcement",
+    "role-based authorization before application execution",
+    "security context propagation"
+  ],
+  "not_executed": [
+    "OIDC discovery",
+    "JWKS retrieval",
+    "JWT signature verification",
+    "issuer and audience validation",
+    "token revocation",
+    "MFA",
+    "WAF",
+    "external penetration test",
+    "production identity provider integration"
+  ],
+  "promotion_claim": "PARTIAL_G3_SECURITY_EVIDENCE_ONLY",
+  "production_ga": "NOT_PROMOTED"
+}
