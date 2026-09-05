@@ -1,0 +1,65 @@
+name: R1.2 Product Container Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/r1.2-product-container-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  product-container-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Build OCI candidate image
+        run: |
+          set -euo pipefail
+          docker build --pull --tag aegis-product:r1.2-candidate ./product
+          docker image inspect aegis-product:r1.2-candidate --format '{{.Id}}' | tee /tmp/aegis-image-id.txt
+      - name: Run container and verify health contract
+        run: |
+          set -euo pipefail
+          docker run --detach --name aegis-product-r12 -p 18080:8080 aegis-product:r1.2-candidate
+          cleanup() { docker logs aegis-product-r12 || true; docker rm -f aegis-product-r12 >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if node -e "fetch('http://127.0.0.1:18080/health/ready').then(async r=>{const b=await r.json();if(r.status!==200||b.status!=='READY')process.exit(1)}).catch(()=>process.exit(1))"; then
+              break
+            fi
+            if [ "$attempt" = 30 ]; then exit 1; fi
+            sleep 1
+          done
+          node -e "fetch('http://127.0.0.1:18080/health/live').then(async r=>{const b=await r.json();if(r.status!==200||b.status!=='HEALTHY')process.exit(1)}).catch(()=>process.exit(1))"
+          docker inspect aegis-product-r12 --format '{{json .State.Health}}' | tee /tmp/aegis-container-health.json
+      - name: Record container evidence
+        if: success()
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.2-container-evidence
+          cp /tmp/aegis-image-id.txt build/r1.2-container-evidence/image-id.txt
+          cp /tmp/aegis-container-health.json build/r1.2-container-evidence/container-health.json
+          printf 'R1_2_PRODUCT_CONTAINER_SMOKE=PASS\n' > build/r1.2-container-evidence/gate-status.txt
+      - name: Upload container evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.2-product-container-smoke
+          path: build/r1.2-container-evidence/**
+          if-no-files-found: error
