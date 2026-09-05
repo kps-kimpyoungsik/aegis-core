@@ -1,0 +1,21 @@
+{
+  "gate": "M6X_13_LOCAL_FINETUNE_DYNAMIC_LEARNING_OPTIMIZATION",
+  "status": "PASS",
+  "checks": {
+    "snapshot_exact_pin": true,
+    "run_deterministic": true,
+    "run_ready_not_started": true,
+    "no_gpu_training": true,
+    "valid_material_passes": true,
+    "protected_eval_rejected": true,
+    "low_correctness_rejected": true,
+    "duplicate_rejected": true,
+    "optimizer_no_raw_protected_eval": true,
+    "optimizer_no_snapshot_mutation": true,
+    "eval_handoff_ready": true
+  },
+  "actual_gpu_training_executed": false,
+  "actual_golden_auto_promotion": false,
+  "actual_snapshot_mutation": false,
+  "actual_model_promotion": false
+}
