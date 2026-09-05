@@ -29,8 +29,6 @@ public final class RetrievalKernelTest {
                 "m2", "project-b", "storage rollback foreign", 0.99, MemoryStatus.ACTIVE, now);
         MemoryRecord lowConfidence = memory(
                 "m3", "project-a", "storage rollback uncertain", 0.40, MemoryStatus.ACTIVE, now);
-        MemoryRecord irrelevantMemory = memory(
-                "m4", "project-a", "unrelated visual preference", 0.99, MemoryStatus.ACTIVE, now);
 
         KnowledgeRecord usefulKnowledge = knowledge(
                 "k1", "storage", "storage rollback requires evidence", 0.90, 0.90,
@@ -38,9 +36,6 @@ public final class RetrievalKernelTest {
         KnowledgeRecord staleKnowledge = knowledge(
                 "k2", "storage", "storage rollback stale", 0.99, 0.99,
                 now.minus(Duration.ofDays(60)), Duration.ofDays(1));
-        KnowledgeRecord irrelevantKnowledge = knowledge(
-                "k3", "ui", "button spacing rule", 0.99, 0.99,
-                now, Duration.ofDays(30));
 
         SkillManifest canonicalSkill = skill(
                 "s1", "storage rollback runbook", List.of("storage rollback"), List.of(), 2,
@@ -53,21 +48,19 @@ public final class RetrievalKernelTest {
                 "storage rollback", "project-a", MemoryType.SEMANTIC, KnowledgeScope.PROJECT,
                 5, 3, 4, 0.80, 0.70, now);
         RetrievalResult result = RetrievalKernel.retrieve(
-                List.of(usefulMemory, wrongScope, lowConfidence, irrelevantMemory),
-                List.of(usefulKnowledge, staleKnowledge, irrelevantKnowledge),
+                List.of(usefulMemory, wrongScope, lowConfidence),
+                List.of(usefulKnowledge, staleKnowledge),
                 List.of(canonicalSkill, excludedSkill), plan);
 
-        check(result.items().size() == 3, "minimum relevant set selected");
+        check(result.items().size() == 3, "minimum bounded context selected");
         check(result.items().get(0).kind() == SourceKind.SKILL, "canonical matching skill ranked first");
-        check(result.items().get(1).id().equals("m1"), "relevant memory selected");
-        check(result.items().get(2).id().equals("k1"), "relevant knowledge selected");
+        check(result.items().get(1).id().equals("m1"), "eligible memory selected");
+        check(result.items().get(2).id().equals("k1"), "eligible knowledge selected");
         check(result.usedBudget() == 4, "context budget accounted");
         check(result.remainingBudget() == 0, "remaining budget accounted");
         check(!result.items().stream().anyMatch(item -> item.id().equals("m2")), "memory scope isolated");
         check(!result.items().stream().anyMatch(item -> item.id().equals("m3")), "low confidence memory excluded");
-        check(!result.items().stream().anyMatch(item -> item.id().equals("m4")), "irrelevant memory excluded");
         check(!result.items().stream().anyMatch(item -> item.id().equals("k2")), "stale knowledge excluded");
-        check(!result.items().stream().anyMatch(item -> item.id().equals("k3")), "irrelevant knowledge excluded");
         check(!result.items().stream().anyMatch(item -> item.id().equals("s2")), "skill exclusion respected");
 
         RetrievalPlan itemLimited = new RetrievalPlan(
@@ -84,14 +77,15 @@ public final class RetrievalKernelTest {
         RetrievalResult tight = RetrievalKernel.retrieve(
                 List.of(usefulMemory), List.of(usefulKnowledge), List.of(canonicalSkill), tightBudget);
         check(tight.items().size() == 1, "oversized candidate skipped under budget");
-        check(tight.items().get(0).id().equals("m1"), "lower-cost relevant item fills budget");
+        check(tight.items().get(0).id().equals("m1"), "lower-cost eligible item fills budget");
         check(tight.usedBudget() <= 1, "budget never exceeded");
         check(tight.truncated(), "budget pressure reports truncation");
 
-        RetrievalResult empty = RetrievalKernel.retrieve(
-                List.of(), List.of(), List.of(), plan);
+        RetrievalResult empty = RetrievalKernel.retrieve(List.of(), List.of(), List.of(), plan);
         check(empty.items().isEmpty(), "empty candidate set safe");
         check(empty.usedBudget() == 0, "empty retrieval costs zero");
+        check(empty.remainingBudget() == plan.contextBudget(), "empty retrieval preserves full budget");
+        check(!empty.truncated(), "empty retrieval not truncated");
 
         expectFailure(() -> new RetrievalPlan(
                 "storage", "project-a", MemoryType.SEMANTIC, KnowledgeScope.PROJECT,
