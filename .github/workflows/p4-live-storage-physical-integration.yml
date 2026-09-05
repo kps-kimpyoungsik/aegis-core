@@ -1,0 +1,91 @@
+name: P4 Live Storage Physical Integration
+
+on:
+  pull_request:
+    paths:
+      - 'storage-adapters/**'
+      - '.github/workflows/p4-live-storage-physical-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  physical-integration:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: aegis_test
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      AEGIS_TEST_POSTGRES_URL: jdbc:postgresql://127.0.0.1:5432/aegis_test
+      AEGIS_TEST_POSTGRES_USER: aegis
+      AEGIS_TEST_POSTGRES_PASSWORD: aegis_test_only
+      AEGIS_TEST_REDIS_HOST: 127.0.0.1
+      AEGIS_TEST_REDIS_PORT: '6379'
+      PGPASSWORD: aegis_test_only
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install physical integration clients
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java postgresql-client redis-tools
+          test -f /usr/share/java/postgresql.jar
+      - name: Compile physical integration test with lint gate
+        working-directory: storage-adapters
+        run: |
+          set -euo pipefail
+          rm -rf build/physical-classes
+          mkdir -p build/physical-classes build/evidence
+          mapfile -t SOURCES < <(find src/main/java -name '*.java' -print | sort)
+          SOURCES+=(src/test/java/aegis/storage/PhysicalStorageIntegrationTest.java)
+          javac --release 21 -Xlint:all -Werror -cp /usr/share/java/postgresql.jar -d build/physical-classes "${SOURCES[@]}"
+      - name: Execute PostgreSQL and Redis physical gate
+        working-directory: storage-adapters
+        run: |
+          set -euo pipefail
+          output="$(java -cp build/physical-classes:/usr/share/java/postgresql.jar aegis.storage.PhysicalStorageIntegrationTest)"
+          printf '%s\n' "$output" | tee build/evidence/physical-integration.txt
+          pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
+          test -n "$pass_line"
+          actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
+          declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
+          test "$actual" = "$declared"
+          echo "PHYSICAL_RUNTIME_GATE=PASS" | tee build/evidence/physical-runtime-gate.txt
+      - name: Record physical runtime evidence
+        working-directory: storage-adapters
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc 'select version();' | tee build/evidence/postgres-version.txt
+          redis-cli -h 127.0.0.1 -p 6379 INFO server | grep '^redis_version:' | tr -d '\r' | tee build/evidence/redis-version.txt
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc 'select dataset_id,record_id,record_version from aegis_record order by dataset_id,record_id;' | tee build/evidence/postgres-record-state.txt
+      - name: Upload physical integration evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-storage-physical-integration
+          path: storage-adapters/build/evidence/**
+          if-no-files-found: error

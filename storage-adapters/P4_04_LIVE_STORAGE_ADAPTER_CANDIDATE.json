@@ -1,0 +1,35 @@
+{
+  "phase": "P4-04 Live Storage Adapters",
+  "status": "LOCAL_CONTRACT_PASS_PHYSICAL_NOT_EXECUTED",
+  "canonical_owner": "aegis.storage-adapters",
+  "base_commit": "effef9c6e81afb2aa370acd6c17d1eec1b6f0186",
+  "assets": {
+    "storage_contracts": "IMPLEMENTED",
+    "postgres_jdbc_record_store": "REFERENCE_IMPLEMENTED",
+    "redis_resp_projection_lease": "REFERENCE_IMPLEMENTED"
+  },
+  "verification": {
+    "java_release": "21",
+    "javac": "-Xlint:all -Werror PASS",
+    "contract_assertions": "13/13 PASS",
+    "jdeps": ["java.base", "java.sql"],
+    "local_jar_sha256": "6fb2d70e09c777605f6e8fb27b9cfa839c788e8dbbadd7e70048141b0bb6e36c"
+  },
+  "physical_runtime": {
+    "postgresql": "NOT_EXECUTED",
+    "redis": "NOT_EXECUTED",
+    "redis_sentinel_cluster": "NOT_EXECUTED",
+    "backup_restore": "NOT_EXECUTED"
+  },
+  "invariants": [
+    "storage adapter never owns dataset meaning",
+    "postgres update uses expected version",
+    "retryable write requires idempotency key",
+    "redis projection carries source version",
+    "redis lease uses monotonically increasing fencing token",
+    "projection/cache loss must not erase canonical truth",
+    "vendor technology remains outside domain/application"
+  ],
+  "promotion_rule": "Do not mark VERIFIED_INTEGRATED until CI and physical runtime gates pass",
+  "rollback_point": "main@effef9c6e81afb2aa370acd6c17d1eec1b6f0186"
+}
