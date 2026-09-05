@@ -1,0 +1,20 @@
+{
+  "version": "0.5.0",
+  "responsibilities": [
+    {"id":"canonical-contracts","owner":"@aegis/contracts","scope":"canonical schemas and protocol contracts"},
+    {"id":"core-domain","owner":"@aegis/core-domain","scope":"canonical domain objects and invariants"},
+    {"id":"application","owner":"@aegis/application","scope":"use cases and application orchestration"},
+    {"id":"responsibility","owner":"@aegis/responsibility","scope":"ownership preflight and conflict decisions"},
+    {"id":"web-console","owner":"aegis-web-console","scope":"React SPA operational projection only"},
+    {"id":"storage-contracts","owner":"@aegis/storage-contracts","scope":"storage ports, canonical storage errors, consistency contracts"},
+    {"id":"storage-runtime","owner":"@aegis/storage-runtime","scope":"shared atomic write, inbox/idempotency and fencing mechanics"},
+    {"id":"storage-memory","owner":"@aegis/storage-memory","scope":"deterministic in-memory reference adapter only"},
+    {"id":"harness-contracts","owner":"@aegis/harness-contracts","scope":"canonical harness execution and failure contracts"},
+    {"id":"harness-runtime","owner":"@aegis/harness-runtime","scope":"execution context, authority consumption, tool runtime, validation, budgets, trace and provenance"},
+    {"id":"harness-testkit","owner":"@aegis/harness-testkit","scope":"harness conformance profile and reusable verification assets"},
+    {"id":"memory-contracts","owner":"@aegis/memory-contracts","scope":"canonical memory kinds, states and promotion errors"},
+    {"id":"memory-runtime","owner":"@aegis/memory-runtime","scope":"working/episode/failure memory lifecycle and staged promotion"},
+    {"id":"knowledge-contracts","owner":"@aegis/knowledge-contracts","scope":"canonical knowledge lifecycle and retrieval match contracts"},
+    {"id":"retrieval-runtime","owner":"@aegis/retrieval-runtime","scope":"selective exact/structural/relation/semantic retrieval and point context packaging"}
+  ]
+}

@@ -1,0 +1,1 @@
+{"name":"@aegis/storage-memory","version":"0.3.0","private":true,"type":"module","exports":"./index.js","dependencies":{"@aegis/storage-contracts":"0.3.0"}}

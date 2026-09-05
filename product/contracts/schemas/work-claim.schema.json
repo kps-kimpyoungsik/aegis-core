@@ -1,0 +1,9 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://aegis.local/schemas/work-claim.schema.json",
+  "title":"WorkClaim",
+  "type":"object",
+  "required":["claimId","responsibility","owner","scope","status"],
+  "properties":{"claimId":{"type":"string","minLength":1},"responsibility":{"type":"string","minLength":1},"owner":{"type":"string","minLength":1},"scope":{"type":"string","minLength":1},"status":{"enum":["PROPOSED","ACTIVE","HANDED_OFF","RELEASED","CONFLICTED"]}},
+  "additionalProperties":false
+}
