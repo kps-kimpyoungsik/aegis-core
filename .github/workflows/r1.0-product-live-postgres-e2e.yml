@@ -1,0 +1,89 @@
+name: R1.0 Product Live PostgreSQL E2E
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - 'storage-adapters/**'
+      - 'integration-gate/**'
+      - '.github/workflows/r1.0-product-live-postgres-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  product-live-postgres-e2e:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: aegis_test
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      AEGIS_TEST_POSTGRES_URL: jdbc:postgresql://127.0.0.1:5432/aegis_test
+      AEGIS_TEST_POSTGRES_USER: aegis
+      AEGIS_TEST_POSTGRES_PASSWORD: aegis_test_only
+      PGPASSWORD: aegis_test_only
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install PostgreSQL integration client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java postgresql-client
+          test -f /usr/share/java/postgresql.jar
+      - name: Bootstrap product workspace without external package downloads
+        working-directory: product
+        run: npm run bootstrap:workspace
+      - name: Product deterministic and quality regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Compile cross-owner integration gate with lint
+        run: |
+          set -euo pipefail
+          rm -rf build/r1-product-postgres
+          mkdir -p build/r1-product-postgres/classes build/r1-product-postgres/evidence
+          mapfile -t SOURCES < <(find storage-adapters/src/main/java -name '*.java' -print | sort)
+          SOURCES+=(integration-gate/src/test/java/aegis/integration/ProductLivePostgresE2EGateTest.java)
+          javac --release 21 -Xlint:all -Werror -cp /usr/share/java/postgresql.jar -d build/r1-product-postgres/classes "${SOURCES[@]}"
+      - name: Execute product runtime to live PostgreSQL gate
+        run: |
+          set -euo pipefail
+          output="$(java -cp build/r1-product-postgres/classes:/usr/share/java/postgresql.jar aegis.integration.ProductLivePostgresE2EGateTest)"
+          printf '%s\n' "$output" | tee build/r1-product-postgres/evidence/product-live-postgres-e2e.txt
+          pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
+          test -n "$pass_line"
+          actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
+          declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
+          test "$actual" = "$declared"
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc "select dataset_id,record_id,record_version from aegis_record where record_id='product-live-postgres-1';" | tee build/r1-product-postgres/evidence/postgres-product-record.txt
+          echo 'R1_PRODUCT_LIVE_POSTGRES_E2E=PASS' | tee build/r1-product-postgres/evidence/gate-status.txt
+      - name: Upload integration evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1-product-live-postgres-e2e
+          path: build/r1-product-postgres/evidence/**
+          if-no-files-found: error
