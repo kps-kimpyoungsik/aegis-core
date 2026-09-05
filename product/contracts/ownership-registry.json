@@ -19,6 +19,7 @@
     {"id":"application-runtime","owner":"@aegis/application-runtime","scope":"task lifecycle integration across ownership, retrieval, harness, validation and memory capture"},
     {"id":"api-server","owner":"aegis-api-server","scope":"HTTP transport, typed command validation and application dispatch"},
     {"id":"worker","owner":"aegis-worker","scope":"queued application command execution adapter"},
-    {"id":"daemon","owner":"aegis-daemon","scope":"worker lifecycle tick and health projection"}
+    {"id":"daemon","owner":"aegis-daemon","scope":"worker lifecycle tick and health projection"},
+    {"id":"release-convergence","owner":"@aegis/release-convergence","scope":"GA evidence gates, canary promotion and public-open approval only"}
   ]
 }
