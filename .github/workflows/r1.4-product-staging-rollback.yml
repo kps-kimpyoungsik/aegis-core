@@ -10,9 +10,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: r1.4-staging-rollback-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   staging-rollback:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,7 +55,8 @@ jobs:
         run: |
           set -euo pipefail
           git worktree add --detach /tmp/aegis-r14-baseline "$BASE_SHA"
-          trap 'git worktree remove --force /tmp/aegis-r14-baseline >/dev/null 2>&1 || true' EXIT
+          cleanup_worktree() { git worktree remove --force /tmp/aegis-r14-baseline >/dev/null 2>&1 || true; }
+          trap cleanup_worktree EXIT
           docker build --pull --tag aegis-product:r1.4-baseline /tmp/aegis-r14-baseline/product
           docker build --pull --tag aegis-product:r1.4-candidate ./product
           docker image inspect aegis-product:r1.4-baseline --format '{{.Id}}' | tee /tmp/aegis-r14-baseline-image-id.txt
