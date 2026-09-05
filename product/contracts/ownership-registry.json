@@ -16,6 +16,7 @@
     {"id":"memory-runtime","owner":"@aegis/memory-runtime","scope":"working/episode/failure memory lifecycle and staged promotion"},
     {"id":"knowledge-contracts","owner":"@aegis/knowledge-contracts","scope":"canonical knowledge lifecycle and retrieval match contracts"},
     {"id":"retrieval-runtime","owner":"@aegis/retrieval-runtime","scope":"selective exact/structural/relation/semantic retrieval and point context packaging"},
-    {"id":"application-runtime","owner":"@aegis/application-runtime","scope":"task lifecycle integration across ownership, retrieval, harness, validation and memory capture"}
+    {"id":"application-runtime","owner":"@aegis/application-runtime","scope":"task lifecycle integration across ownership, retrieval, harness, validation and memory capture"},
+    {"id":"release-convergence","owner":"@aegis/release-convergence","scope":"GA evidence gates, canary promotion and public-open approval only"}
   ]
 }
