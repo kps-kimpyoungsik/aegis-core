@@ -1,0 +1,43 @@
+{
+  "workstream": "P4-04 Live Storage Adapters",
+  "canonical_owner": "aegis.data-plane",
+  "decision": "REUSE_ADAPT_COMPOSE_SESSION_P4_5_HARNESS",
+  "source_evidence": [
+    "session:/aegis_p4_5_live_integration_harness/p4.5-live-integration-ci-contract.json",
+    "session:/aegis_p4_5_live_integration_harness/p4.5-live-integration-harness-report.json",
+    "session:/aegis_p4_5_live_integration_harness/compose.yaml",
+    "session:/aegis_p4_5_live_integration_harness/scripts/test-postgres-live.sh",
+    "session:/aegis_p4_5_live_integration_harness/scripts/test-redis-live.sh",
+    "session:/aegis_p4_5_live_integration_harness/cross-session-handoff-p4.5-live-integration.json",
+    "session:/aegis_conflict_guard_and_p4_5_blocker_manifest/p4.5-external-blocker-manifest.json",
+    "session:/aegis_p4_5_composite_closure_readiness/p4.5-storage-capability-matrix.json"
+  ],
+  "reused_contracts": [
+    "RecordStorePort",
+    "EventLogPort",
+    "ProjectionStorePort",
+    "CachePort",
+    "LeaseLockPort"
+  ],
+  "live_acceptance": {
+    "postgresql": [
+      "source+outbox transaction",
+      "optimistic version update",
+      "projection monotonic replay"
+    ],
+    "redis": [
+      "cache TTL",
+      "lease acquire/reject/release",
+      "monotonic fencing token"
+    ]
+  },
+  "non_goals": [
+    "new dataset owner",
+    "new retry framework",
+    "new idempotency framework",
+    "new outbox semantic owner",
+    "vendor SDK dependency in core"
+  ],
+  "promotion_rule": "P4-04 live claims require actual service-backed GitHub Actions evidence; static validation alone is insufficient.",
+  "rollback_point": "main@c015ce2ab9a69a268a73c83d95a3e34da3b82e4f"
+}
