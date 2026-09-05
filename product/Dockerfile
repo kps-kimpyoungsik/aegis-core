@@ -8,8 +8,10 @@ COPY package.json ./
 COPY apps ./apps
 COPY packages ./packages
 
-RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund \
-    && npm cache clean --force
+RUN apk upgrade --no-cache \
+    && npm install --omit=dev --ignore-scripts --no-audit --no-fund \
+    && npm cache clean --force \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 USER node
 EXPOSE 8080
