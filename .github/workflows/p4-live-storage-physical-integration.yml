@@ -84,7 +84,7 @@ jobs:
           redis-cli -h 127.0.0.1 -p 6379 INFO server | grep '^redis_version:' | tr -d '\r' | tee build/evidence/redis-version.txt
           psql -h 127.0.0.1 -U aegis -d aegis_test -Atc 'select dataset_id,record_id,record_version from aegis_record order by dataset_id,record_id;' | tee build/evidence/postgres-record-state.txt
       - name: Upload physical integration evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aegis-storage-physical-integration
           path: storage-adapters/build/evidence/**
