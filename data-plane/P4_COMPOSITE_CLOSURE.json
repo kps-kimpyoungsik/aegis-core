@@ -3,10 +3,10 @@
   "status": "PARTIAL_PHYSICAL_IMPLEMENTATION",
   "canonical_owner": "aegis.data-plane",
   "verified_physical_gates": {
-    "P4-01_dataset_registry": "VERIFIED_INTEGRATED"
+    "P4-01_dataset_registry": "VERIFIED_INTEGRATED",
+    "P4-02_record_event_projection_consistency": "VERIFIED_READY_FOR_INTEGRATION"
   },
   "recorded_but_not_physically_verified_in_canonical_repo": {
-    "P4-02_record_event_projection_consistency": "CANDIDATE",
     "P4-03_migration_retention_backup_restore": "GAP",
     "P4-04_live_storage_adapters": "GAP",
     "P4-05_composite_closure": "GAP"
@@ -16,6 +16,20 @@
     "status": "VERIFIED_INTEGRATED",
     "jar": "aegis-data-plane-0.1.0.jar",
     "jar_sha256": "802384a4d8959cc5e7c6678640a4af6a58342656cac3d0a871e14dfcdce05acd"
+  },
+  "p4_02_evidence": {
+    "workflow_run": 33960748848,
+    "workflow_job": 101292096544,
+    "registry_regression": "23/23",
+    "consistency_assertions": "21/21",
+    "evidence_count_guard": "PASS",
+    "release_package_guard": "PASS",
+    "java": "Temurin 21.0.12+1",
+    "dependency": "java.base only",
+    "jar": "aegis-data-plane-0.2.0.jar",
+    "jar_sha256": "7e81f853778a9154bd2df6025fa4c0ee71c1c5f601a5f69dc22b1de0a7fa5d97",
+    "artifact_id": 9967847563,
+    "artifact_zip_sha256": "ae05f3f0b95e9e749e38aecd958e8a6723255ea2eee69bdb27972ccc478c847f"
   },
   "ownership": {
     "dataset_registry_semantics": "aegis.data-plane",
@@ -42,6 +56,6 @@
     "framework_dependency": "NONE",
     "hexagonal_boundary": "PRESERVED"
   },
-  "next_pointer": "Verify and merge P4-02, then P4-03 Migration/Retention/Backup/Restore",
+  "next_pointer": "Merge P4-02 to canonical main, then P4-03 Migration/Retention/Backup/Restore",
   "rollback_point": "main@2e03a1fcdad4761a6fea7f17d060b059e50f17e1"
 }
