@@ -1,0 +1,226 @@
+name: R1.8 Product PostgreSQL Backup Restore
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - 'storage-adapters/**'
+      - 'integration-gate/**'
+      - '.github/workflows/r1.8-product-postgres-backup-restore.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-backup-restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: aegis_test
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      AEGIS_TEST_POSTGRES_URL: jdbc:postgresql://127.0.0.1:5432/aegis_test
+      AEGIS_TEST_POSTGRES_USER: aegis
+      AEGIS_TEST_POSTGRES_PASSWORD: aegis_test_only
+      PGPASSWORD: aegis_test_only
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install PostgreSQL integration client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libpostgresql-jdbc-java postgresql-client
+          test -f /usr/share/java/postgresql.jar
+          mkdir -p build/r1.8-backup-restore/classes build/r1.8-backup-restore/evidence
+
+      - name: Canonical product regression
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+
+      - name: Compile canonical live PostgreSQL gate
+        run: |
+          set -euo pipefail
+          mapfile -t SOURCES < <(find storage-adapters/src/main/java -name '*.java' -print | sort)
+          SOURCES+=(integration-gate/src/test/java/aegis/integration/ProductLivePostgresE2EGateTest.java)
+          javac --release 21 -Xlint:all -Werror \
+            -cp /usr/share/java/postgresql.jar \
+            -d build/r1.8-backup-restore/classes \
+            "${SOURCES[@]}"
+
+      - name: Seed canonical database through existing integration gate
+        run: |
+          set -euo pipefail
+          output="$(java -cp build/r1.8-backup-restore/classes:/usr/share/java/postgresql.jar aegis.integration.ProductLivePostgresE2EGateTest)"
+          printf '%s\n' "$output" | tee build/r1.8-backup-restore/evidence/pre-backup-live-gate.txt
+          pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
+          test -n "$pass_line"
+          actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
+          declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
+          test "$actual" = "$declared"
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc \
+            "select schemaname||'.'||tablename from pg_tables where schemaname not in ('pg_catalog','information_schema') order by 1;" \
+            | tee build/r1.8-backup-restore/evidence/pre-backup-tables.txt
+
+      - name: Capture canonical logical fingerprint and custom backup
+        run: |
+          set -euo pipefail
+          START_NS="$(date +%s%N)"
+          docker run --rm --network host \
+            -e PGPASSWORD=aegis_test_only \
+            -v "${PWD}/build/r1.8-backup-restore:/evidence" \
+            postgres:18-alpine \
+            pg_dump -h 127.0.0.1 -U aegis -d aegis_test \
+              --format=plain --no-owner --no-privileges \
+              --file=/evidence/pre-restore-logical.sql
+          docker run --rm --network host \
+            -e PGPASSWORD=aegis_test_only \
+            -v "${PWD}/build/r1.8-backup-restore:/evidence" \
+            postgres:18-alpine \
+            pg_dump -h 127.0.0.1 -U aegis -d aegis_test \
+              --format=custom --no-owner --no-privileges \
+              --file=/evidence/aegis-r1.8.dump
+          END_NS="$(date +%s%N)"
+          BACKUP_MS="$(( (END_NS - START_NS) / 1000000 ))"
+          test -s build/r1.8-backup-restore/aegis-r1.8.dump
+          test -s build/r1.8-backup-restore/pre-restore-logical.sql
+          sha256sum build/r1.8-backup-restore/pre-restore-logical.sql \
+            | tee build/r1.8-backup-restore/evidence/pre-restore-logical.sha256
+          sha256sum build/r1.8-backup-restore/aegis-r1.8.dump \
+            | tee build/r1.8-backup-restore/evidence/custom-backup.sha256
+          printf '%s\n' "${BACKUP_MS}" \
+            | tee build/r1.8-backup-restore/evidence/backup-elapsed-ms.txt
+
+      - name: Destroy database and restore into fresh database
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U aegis -d postgres -v ON_ERROR_STOP=1 \
+            -c "drop database if exists aegis_test with (force);" \
+            -c "create database aegis_test owner aegis;"
+          START_NS="$(date +%s%N)"
+          docker run --rm --network host \
+            -e PGPASSWORD=aegis_test_only \
+            -v "${PWD}/build/r1.8-backup-restore:/evidence" \
+            postgres:18-alpine \
+            pg_restore -h 127.0.0.1 -U aegis -d aegis_test \
+              --exit-on-error --no-owner --no-privileges \
+              /evidence/aegis-r1.8.dump
+          END_NS="$(date +%s%N)"
+          RESTORE_MS="$(( (END_NS - START_NS) / 1000000 ))"
+          printf '%s\n' "${RESTORE_MS}" \
+            | tee build/r1.8-backup-restore/evidence/restore-elapsed-ms.txt
+
+      - name: Verify restored logical equivalence and canonical behavior
+        run: |
+          set -euo pipefail
+          docker run --rm --network host \
+            -e PGPASSWORD=aegis_test_only \
+            -v "${PWD}/build/r1.8-backup-restore:/evidence" \
+            postgres:18-alpine \
+            pg_dump -h 127.0.0.1 -U aegis -d aegis_test \
+              --format=plain --no-owner --no-privileges \
+              --file=/evidence/post-restore-logical.sql
+          sha256sum build/r1.8-backup-restore/post-restore-logical.sql \
+            | tee build/r1.8-backup-restore/evidence/post-restore-logical.sha256
+          cmp -s \
+            build/r1.8-backup-restore/pre-restore-logical.sql \
+            build/r1.8-backup-restore/post-restore-logical.sql
+          psql -h 127.0.0.1 -U aegis -d aegis_test -Atc \
+            "select dataset_id,record_id,record_version from aegis_record where record_id='product-live-postgres-1';" \
+            | tee build/r1.8-backup-restore/evidence/restored-product-record.txt
+          grep -q 'product-live-postgres-1' build/r1.8-backup-restore/evidence/restored-product-record.txt
+          output="$(java -cp build/r1.8-backup-restore/classes:/usr/share/java/postgresql.jar aegis.integration.ProductLivePostgresE2EGateTest)"
+          printf '%s\n' "$output" | tee build/r1.8-backup-restore/evidence/post-restore-live-gate.txt
+          pass_line="$(printf '%s\n' "$output" | grep -E '^PASS [0-9]+/[0-9]+$' | tail -n 1 || true)"
+          test -n "$pass_line"
+          actual="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\1/')"
+          declared="$(printf '%s' "$pass_line" | sed -E 's/^PASS ([0-9]+)\/([0-9]+)$/\2/')"
+          test "$actual" = "$declared"
+
+      - name: Prove corrupt backup restore fails closed
+        run: |
+          set -euo pipefail
+          cp build/r1.8-backup-restore/aegis-r1.8.dump build/r1.8-backup-restore/aegis-r1.8-corrupt.dump
+          original_size="$(stat -c '%s' build/r1.8-backup-restore/aegis-r1.8-corrupt.dump)"
+          test "$original_size" -gt 128
+          truncate -s "$(( original_size / 2 ))" build/r1.8-backup-restore/aegis-r1.8-corrupt.dump
+          psql -h 127.0.0.1 -U aegis -d postgres -v ON_ERROR_STOP=1 \
+            -c "drop database if exists aegis_corrupt with (force);" \
+            -c "create database aegis_corrupt owner aegis;"
+          set +e
+          docker run --rm --network host \
+            -e PGPASSWORD=aegis_test_only \
+            -v "${PWD}/build/r1.8-backup-restore:/evidence" \
+            postgres:18-alpine \
+            pg_restore -h 127.0.0.1 -U aegis -d aegis_corrupt \
+              --exit-on-error --no-owner --no-privileges \
+              /evidence/aegis-r1.8-corrupt.dump \
+            > build/r1.8-backup-restore/evidence/corrupt-restore.stdout \
+            2> build/r1.8-backup-restore/evidence/corrupt-restore.stderr
+          corrupt_status=$?
+          set -e
+          test "$corrupt_status" -ne 0
+          printf 'CORRUPT_BACKUP_RESTORE_REJECTION=PASS\n' \
+            | tee build/r1.8-backup-restore/evidence/corrupt-restore-status.txt
+
+      - name: Record R1.8 qualification boundary
+        run: |
+          set -euo pipefail
+          {
+            echo 'R1_8_POSTGRES_BACKUP_RESTORE=PASS'
+            echo 'scope=isolated_ci_full_logical_backup_restore'
+            echo 'rpo_slo=NOT_CLAIMED'
+            echo 'rto_slo=NOT_CLAIMED'
+            echo 'pitr=NOT_EXECUTED'
+            echo 'cloud_snapshot_restore=NOT_EXECUTED'
+            echo 'production_disaster_recovery=NOT_EXECUTED'
+            echo "commit=${GITHUB_SHA}"
+            echo "repository=${GITHUB_REPOSITORY}"
+          } > build/r1.8-backup-restore/evidence/environment.txt
+          sha256sum \
+            .github/workflows/r1.8-product-postgres-backup-restore.yml \
+            .github/workflows/r1.0-product-live-postgres-e2e.yml \
+            > build/r1.8-backup-restore/evidence/source-sha256.txt
+
+      - name: Upload R1.8 backup-restore evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.8-postgres-backup-restore-evidence
+          path: build/r1.8-backup-restore/evidence/**
+          if-no-files-found: error
+          retention-days: 30
