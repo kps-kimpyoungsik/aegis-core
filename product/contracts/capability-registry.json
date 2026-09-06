@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "capabilities": [
     {"id":"governance.session-collision-control","domain":"governance","ownerResponsibility":"responsibility","canonicalPaths":["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/workstreams/","product/tools/workstream-collision-check.mjs"],"status":"ACTIVE"},
     {"id":"runtime.task-lifecycle","domain":"runtime-execution","ownerResponsibility":"application-runtime","canonicalPaths":["runtime-kernel/","product/packages/application-runtime/"],"status":"ACTIVE"},
@@ -15,7 +15,7 @@
     {"id":"api.rate-limiting","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/","product/tests/"],"status":"ACTIVE"},
     {"id":"api.token-introspection","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/token-introspection.js","product/apps/api-server/oidc-jwt-authenticator.js","product/apps/api-server/index.js","product/tests/token-introspection.test.mjs"],"status":"ACTIVE"},
     {"id":"api.distributed-rate-limiting","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/"],"status":"PLANNED"},
-    {"id":"security.edge-waf","domain":"api-security-edge","ownerResponsibility":null,"canonicalPaths":[],"status":"PLANNED_UNOWNED"},
+    {"id":"security.edge-waf","domain":"api-security-edge","ownerResponsibility":"edge-security","canonicalPaths":["product/edge-security/"],"status":"PLANNED"},
     {"id":"ui.operational-projection","domain":"ui-ux","ownerResponsibility":"web-console","canonicalPaths":["product/apps/web-console/"],"status":"ACTIVE"},
     {"id":"release.evidence-promotion","domain":"release-evolution","ownerResponsibility":"release-convergence","canonicalPaths":["product/release/","product/tools/release-manifest-check.mjs"],"status":"ACTIVE"},
     {"id":"release.staging-rollout","domain":"release-evolution","ownerResponsibility":"staging-deployment","canonicalPaths":["product/deployment/",".github/workflows/"],"status":"ACTIVE"},
