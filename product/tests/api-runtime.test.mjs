@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createApiServer } from "../apps/api-server/index.js";
+import { createApiServer, createFixedWindowRateLimiter } from "../apps/api-server/index.js";
 
 const TENANT_A = "tenant-a";
 const executorAuthenticator = async () => ({ id:"principal:executor", tenantId:TENANT_A, roles:["TASK_EXECUTOR"] });
@@ -150,5 +150,33 @@ test("internal execution errors do not expose exception details", async () => {
     const body = await response.json();
     assert.deepEqual(body, { code:"AEGIS-API-500 INTERNAL_ERROR" });
     assert.equal(JSON.stringify(body).includes("do-not-leak"), false);
+  });
+});
+
+test("authenticated task requests are rate limited before excess application execution", async () => {
+  let calls=0;
+  let now=1_000;
+  const rateLimitRequest = createFixedWindowRateLimiter({ limit:2, windowMs:60_000, now:()=>now });
+  await withServer({ executeTask: async(input)=>{calls+=1;return{status:"COMPLETED",task:input.task};}, authenticateRequest:executorAuthenticator, rateLimitRequest, idFactory:()=>`rate-${calls+1}` }, async (base) => {
+    const request = () => fetch(`${base}/v1/tasks`, { method:"POST", headers:tenantHeaders({"content-type":"application/json"}), body:JSON.stringify({goal:"bounded",owner:"ops",responsibility:"application-runtime"}) });
+    assert.equal((await request()).status,202);
+    assert.equal((await request()).status,202);
+    const limited = await request();
+    assert.equal(limited.status,429);
+    assert.equal(limited.headers.get("retry-after"),"59");
+    assert.deepEqual(await limited.json(),{code:"AEGIS-API-016 RATE_LIMITED"});
+    assert.equal(calls,2);
+    now=61_000;
+    assert.equal((await request()).status,202);
+    assert.equal(calls,3);
+  });
+});
+
+test("health probes remain outside the authenticated rate-limit boundary", async () => {
+  let limiterCalls=0;
+  await withServer({ executeTask:async()=>({status:"COMPLETED"}), rateLimitRequest:async()=>{limiterCalls+=1;return{allowed:false,retryAfterSeconds:60};} }, async (base) => {
+    assert.equal((await fetch(`${base}/health/live`)).status,200);
+    assert.equal((await fetch(`${base}/health/ready`)).status,200);
+    assert.equal(limiterCalls,0);
   });
 });
