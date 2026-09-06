@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "capabilities": [
+    {"id":"governance.session-collision-control","domain":"governance","ownerResponsibility":"responsibility","canonicalPaths":["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/workstreams/","product/tools/workstream-collision-check.mjs"],"status":"ACTIVE"},
+    {"id":"runtime.task-lifecycle","domain":"runtime-execution","ownerResponsibility":"application-runtime","canonicalPaths":["runtime-kernel/","product/packages/application-runtime/"],"status":"ACTIVE"},
+    {"id":"runtime.harness-execution","domain":"runtime-execution","ownerResponsibility":"harness-runtime","canonicalPaths":["runtime-kernel/","product/packages/harness-runtime/"],"status":"ACTIVE"},
+    {"id":"brain.memory-lifecycle","domain":"portable-brain","ownerResponsibility":"memory-runtime","canonicalPaths":["portable-brain/","product/packages/memory-runtime/"],"status":"ACTIVE"},
+    {"id":"brain.knowledge-retrieval","domain":"portable-brain","ownerResponsibility":"retrieval-runtime","canonicalPaths":["portable-brain/","product/packages/retrieval-runtime/"],"status":"ACTIVE"},
+    {"id":"data.storage-contracts","domain":"data-plane","ownerResponsibility":"storage-contracts","canonicalPaths":["data-plane/","product/packages/storage-contracts/"],"status":"ACTIVE"},
+    {"id":"data.atomic-idempotency-fencing","domain":"data-plane","ownerResponsibility":"storage-runtime","canonicalPaths":["data-plane/","storage-adapters/","product/packages/storage-runtime/"],"status":"ACTIVE"},
+    {"id":"data.tenant-isolation","domain":"data-plane","ownerResponsibility":"storage-runtime","canonicalPaths":["data-plane/","storage-adapters/","product/packages/storage-runtime/"],"status":"PLANNED"},
+    {"id":"api.http-transport","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/"],"status":"ACTIVE"},
+    {"id":"api.auth-principal-rbac-tenant","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/","product/tests/api-runtime.test.mjs"],"status":"ACTIVE"},
+    {"id":"api.oidc-jwks-jwt-verification","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/oidc-jwt-authenticator.js","product/tests/oidc-jwt-authenticator.test.mjs"],"status":"ACTIVE"},
+    {"id":"api.rate-limiting","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/","product/tests/"],"status":"ACTIVE"},
+    {"id":"api.token-introspection","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/token-introspection.js","product/apps/api-server/oidc-jwt-authenticator.js","product/apps/api-server/index.js","product/tests/token-introspection.test.mjs"],"status":"ACTIVE"},
+    {"id":"api.distributed-rate-limiting","domain":"api-security-edge","ownerResponsibility":"api-server","canonicalPaths":["product/apps/api-server/"],"status":"PLANNED"},
+    {"id":"security.edge-waf","domain":"api-security-edge","ownerResponsibility":null,"canonicalPaths":[],"status":"PLANNED_UNOWNED"},
+    {"id":"ui.operational-projection","domain":"ui-ux","ownerResponsibility":"web-console","canonicalPaths":["product/apps/web-console/"],"status":"ACTIVE"},
+    {"id":"release.evidence-promotion","domain":"release-evolution","ownerResponsibility":"release-convergence","canonicalPaths":["product/release/","product/tools/release-manifest-check.mjs"],"status":"ACTIVE"},
+    {"id":"release.staging-rollout","domain":"release-evolution","ownerResponsibility":"staging-deployment","canonicalPaths":["product/deployment/",".github/workflows/"],"status":"ACTIVE"},
+    {"id":"release.evolution-preflight","domain":"release-evolution","ownerResponsibility":"release-convergence","canonicalPaths":["product/tools/release-evolution-preflight.mjs","product/tests/release-evolution-preflight.test.mjs",".github/workflows/evolution-release-preflight.yml"],"status":"ACTIVE"},
+    {"id":"release.manifest-baseline-serialization","domain":"release-evolution","ownerResponsibility":"release-convergence","canonicalPaths":["product/release/release-manifest.candidate.json","product/tools/release-evolution-preflight.mjs"],"status":"CHALLENGED"},
+    {"id":"release.branch-protection","domain":"release-evolution","ownerResponsibility":"release-convergence","canonicalPaths":[],"status":"PLANNED"},
+    {"id":"research.slm-design","domain":"research-learning","ownerResponsibility":null,"canonicalPaths":["docs/slm/"],"status":"REFERENCE_ONLY"},
+    {"id":"legacy.rc3-convergence","domain":"research-learning","ownerResponsibility":"release-convergence","canonicalPaths":["release-candidates/rc3/"],"status":"REFERENCE_ONLY"},
+    {"id":"legacy.rc6-semantic-gate","domain":"research-learning","ownerResponsibility":"responsibility","canonicalPaths":["integration-gate/"],"status":"REFERENCE_ONLY"}
+  ]
+}

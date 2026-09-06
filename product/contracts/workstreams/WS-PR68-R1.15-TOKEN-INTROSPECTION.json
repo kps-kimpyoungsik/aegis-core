@@ -1,0 +1,1 @@
+{"id":"WS-PR68-R1.15-TOKEN-INTROSPECTION","sessionClass":"security-release","state":"INTEGRATED","pr":68,"ownerResponsibility":"api-server","capabilityIds":["api.token-introspection"],"integratedMainSha":"f029911b434604b29174c63d42a233a5920aa912","decision":"REUSE_ADAPT_INTEGRATED"}

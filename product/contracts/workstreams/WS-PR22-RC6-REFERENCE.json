@@ -1,0 +1,1 @@
+{"id":"WS-PR22-RC6-REFERENCE","sessionClass":"legacy-integration","state":"REFERENCE","pr":22,"ownerResponsibility":"responsibility","capabilityIds":["legacy.rc6-semantic-gate"],"touchPaths":["integration-gate/"],"decision":"REFERENCE_ONLY"}

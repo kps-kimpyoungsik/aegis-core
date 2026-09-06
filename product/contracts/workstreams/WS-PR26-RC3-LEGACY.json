@@ -1,0 +1,1 @@
+{"id":"WS-PR26-RC3-LEGACY","sessionClass":"legacy-convergence","state":"REFERENCE","pr":26,"ownerResponsibility":"release-convergence","capabilityIds":["legacy.rc3-convergence"],"touchPaths":["release-candidates/rc3/"],"decision":"DO_NOT_MERGE_AS_IS"}

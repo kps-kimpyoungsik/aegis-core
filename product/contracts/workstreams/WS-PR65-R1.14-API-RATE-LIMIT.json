@@ -1,0 +1,1 @@
+{"id":"WS-PR65-R1.14-API-RATE-LIMIT","sessionClass":"security-release","state":"INTEGRATED","pr":65,"ownerResponsibility":"api-server","capabilityIds":["api.rate-limiting"],"integratedMainSha":"766b471abaa9b4ed33863eaa2c4c5641437517df","decision":"INTEGRATED_AFTER_REVERIFY"}
