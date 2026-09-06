@@ -1,7 +1,7 @@
 {
   "releaseId": "aegis-r1.10-ga-evidence-convergence",
   "status": "CANDIDATE",
-  "sourceRevision": "main@78bb8db880cdacc95084c742f656bdd8db399dca",
+  "sourceRevision": "main@0212854f64ceeda63c092cb88b48617a8a01d57b",
   "contracts": "0.1.0",
   "packageBaseline": "0.8.0",
   "validation": {
@@ -65,5 +65,5 @@
     "productionApproval": "NOT_EXECUTED",
     "publicOpenApproval": "NOT_EXECUTED"
   },
-  "rollbackPoint": "main@78bb8db880cdacc95084c742f656bdd8db399dca"
+  "rollbackPoint": "main@0212854f64ceeda63c092cb88b48617a8a01d57b"
 }
