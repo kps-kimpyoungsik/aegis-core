@@ -5,13 +5,13 @@
   "branch": "release/r1.16-incident-response-readiness-20260906",
   "baseMainSha": "169010f71e163e0fee739281c15a03ffc937eef9",
   "ownerResponsibility": "release-convergence",
-  "capabilityIds": ["release.incident-response-readiness-validation"],
+  "capabilityIds": ["release.evidence-promotion"],
   "touchPaths": [
     "product/packages/release-convergence/incident-response-readiness.js",
     "product/packages/release-convergence/index.js",
     "product/tests/incident-response-readiness.test.mjs",
     "product/release/r1.16-incident-response-readiness.json"
   ],
-  "decision": "EXTEND_EXISTING_FAIL_CLOSED",
+  "decision": "REUSE_AND_EXTEND_FAIL_CLOSED",
   "rollbackPoint": "main@169010f71e163e0fee739281c15a03ffc937eef9"
 }
