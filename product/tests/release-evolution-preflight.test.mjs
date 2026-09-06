@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertManifestBaseline, findReleaseNumberCollisions, releasePrefix } from "../tools/release-evolution-preflight.mjs";
+import {
+  assertManifestBaseline,
+  findReleaseNumberCollisions,
+  releasePrefix,
+  runPreflight,
+  shouldEnforceManifestBaseline,
+} from "../tools/release-evolution-preflight.mjs";
 
 test("release prefix is extracted from release and workflow paths", () => {
   assert.equal(releasePrefix("product/release/r1.13-oidc.json"), "r1.13");
@@ -8,9 +14,28 @@ test("release prefix is extracted from release and workflow paths", () => {
   assert.equal(releasePrefix("product/apps/api-server/index.js"), null);
 });
 
-test("manifest baseline must match exact pull request base", () => {
+test("manifest baseline must match exact pull request base when manifest is mutated", () => {
   assert.doesNotThrow(() => assertManifestBaseline({ sourceRevision: "main@abc123" }, "abc123"));
   assert.throws(() => assertManifestBaseline({ sourceRevision: "main@old" }, "abc123"), /BASELINE_DRIFT/);
+});
+
+test("manifest baseline ownership applies only when canonical manifest is mutated", () => {
+  assert.equal(shouldEnforceManifestBaseline(["product/release/release-manifest.candidate.json"]), true);
+  assert.equal(shouldEnforceManifestBaseline(["product/contracts/workstreams/WS-X.json"]), false);
+  assert.equal(shouldEnforceManifestBaseline([".github/workflows/r1.18-data-plane-tenant-isolation.yml"]), false);
+});
+
+test("non-owner workstream change does not inherit stale shared manifest baseline", () => {
+  assert.deepEqual(
+    runPreflight({
+      expectedBaseSha: "new-base",
+      manifestPath: new URL("../release/release-manifest.candidate.json", import.meta.url),
+      changedPaths: ["product/contracts/workstreams/WS-X.json"],
+      addedPaths: [],
+      basePaths: [],
+    }),
+    { expectedBaseSha: "new-base", manifestBaselineEnforced: false, addedReleasePrefixes: [] },
+  );
 });
 
 test("new release number already present on base is rejected", () => {
