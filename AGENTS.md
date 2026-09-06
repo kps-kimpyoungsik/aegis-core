@@ -37,6 +37,22 @@ Repeated failure mechanisms must be correlated with prior session failures and p
 
 The continuation evidence should record, when applicable: session/workstream identifiers, failing PR/commit/workflow/job, concrete failure signature, root-cause status, corrective owner, latest corrective commit/PR, regression status, and whether the failure is safe to close.
 
+## Handoff Discovery & Completion Assurance Invariant
+
+Every session, continuation, wake-up, automation, and workstream MUST read and apply `docs/governance/SESSION_HANDOFF_DISCOVERY_COMPLETION_GUIDE.md` before selecting unrelated new work whenever handed-off work, unresolved failures, retries, blockers, dependencies, owner changes, or cross-session work may exist.
+
+A session MUST NOT depend on conversational memory or a previously supplied issue number to discover its work. It MUST search by canonical domain, owner/capability, failure fingerprint, active workstream/PR, blocker/dependency, and current Git evidence. If a first lookup returns no result, it MUST perform fallback discovery across canonical registries, Failure Memory where available, open issues, open PRs, workflow/check failures, recent relevant commits, handoff/audit records, and recent notifications when available. Only after that sequence may it report `NO_ACTIVE_HANDOFF_CONFIRMED`.
+
+`SEARCH_NOT_FOUND` is not `NO_ERROR`. `HANDOFF_CREATED` is not `COMPLETED`.
+
+The required handoff lifecycle is `HANDOFF_CREATED -> ACKNOWLEDGED -> IN_PROGRESS -> VALIDATING -> COMPLETED`, with `BLOCKED_EXTERNAL`, `BLOCKED_DEPENDENCY`, `FAILED_VALIDATION`, `RETRY_DUE`, `REHANDOFF_REQUIRED`, `ESCALATION_REQUIRED`, `STALE`, `PAUSED`, `ROLLBACK`, and `FAILED` as explicit alternatives.
+
+`COMPLETED` requires acceptance criteria, verifier/validation evidence tied to the exact candidate/state, no unresolved blocker, resolved canonical ownership, preserved required regression/security/release gates, and provenance/rollback evidence where applicable. Issue closure, comment creation, branch creation, or handoff delivery alone is insufficient completion evidence.
+
+Incomplete handed-off work MUST be classified and looped by cause: deterministic failure requires correction before rerun; external state blocks retry until the state fingerprint changes and then requires a cheap canary before bounded fan-out; transient failures permit bounded retry only; unresolved dependencies remain blocked until dependency evidence changes; stale/unacknowledged or owner-drifted work requires re-handoff; exhausted retry budgets, high-risk unknown causes, security/authority conflicts, or release-critical unresolved failures require escalation. Blind or infinite retry is prohibited.
+
+Every substantive session result involving handed-off work MUST end in one explicit state: `COMPLETED_VERIFIED`, `VALIDATING`, `RETRY_DUE`, `REHANDOFF_REQUIRED`, `BLOCKED_EXTERNAL`, `BLOCKED_DEPENDENCY`, `ESCALATION_REQUIRED`, or `NO_ACTIVE_HANDOFF_CONFIRMED`. Unresolved work may not be silently abandoned.
+
 ## Target-File Git Status Preflight Invariant
 
 Before editing any implementation/design file, every session MUST inspect the Git state of the exact target files/directories it intends to touch.
@@ -105,6 +121,8 @@ Each substantive workstream should record at minimum:
 - `baselineMainSha`
 - latest-main check time or evidence reference
 - session/workstream error-preflight evidence and unresolved failure status
+- handoff discovery/audit state and active failure fingerprints when applicable
+- blocker/dependency state and retry/re-handoff/escalation decision when applicable
 - target-file Git status / revision evidence
 - intervening commit assessment
 - open PR / active workstream overlap assessment
@@ -120,6 +138,10 @@ Each substantive workstream should record at minimum:
 ## Canonical Invariants Added
 
 - No continuation before current session/workstream Git failures are inspected and classified.
+- No unresolved handoff may be ignored because a session cannot remember its issue number.
+- No `SEARCH_NOT_FOUND` result may be treated as `NO_ERROR` before fallback discovery.
+- No handoff, issue, comment, branch, or PR creation may be treated as completion without acceptance and verifier evidence.
+- No blind or infinite retry; retry must follow failure-domain policy and budget.
 - No work from an unchecked stale Git baseline.
 - No target-file mutation before exact Git target status/revision inspection.
 - No duplicate implementation when a newer main commit or active canonical workstream already owns the capability.
@@ -135,7 +157,7 @@ Each substantive workstream should record at minimum:
 
 ## Mandatory Cross-Session Work Loop
 
-`SYNC MAIN -> INSPECT THIS SESSION/WORKSTREAM ERRORS -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
+`SYNC MAIN -> READ AGENTS + HANDOFF DISCOVERY/COMPLETION GUIDE -> INSPECT THIS SESSION/WORKSTREAM ERRORS -> DISCOVER ACTIVE HANDOFFS/FINGERPRINTS/BLOCKERS -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> AUDIT COMPLETION -> COMPLETE/RETRY/REHANDOFF/WAIT/ESCALATE -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
 
 This loop is mandatory at the start of every continuation/wakeup cycle, not only at the beginning of a conversation.
 
