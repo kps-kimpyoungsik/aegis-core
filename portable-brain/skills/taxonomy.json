@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "scope": "governed-information-assets",
+  "root": "portable-brain/skills",
+  "maxSemanticDepth": 5,
+  "levels": [
+    {"depth": 1, "name": "field", "examples": ["software-engineering", "security", "data", "ai", "product"]},
+    {"depth": 2, "name": "area", "examples": ["operations", "backend", "frontend", "database", "governance"]},
+    {"depth": 3, "name": "relation", "examples": ["failure-analysis", "dependency", "recovery", "integration", "security-boundary"]},
+    {"depth": 4, "name": "module"},
+    {"depth": 5, "name": "unit", "prefixes": ["service-", "resource-", "page-"]}
+  ],
+  "forbiddenBuckets": ["misc", "temp", "new", "other", "unknown"],
+  "rootMetadataExceptions": ["README.md", "taxonomy.json", "INDEX.json"],
+  "overflowPolicy": "MERGE_INTO_L5_METADATA_OR_SPLIT_AS_SIBLING_L5",
+  "creationGate": [
+    "CLASSIFY",
+    "OWNER_RESOLVE",
+    "SEARCH_EXISTING",
+    "DEDUPE_IDENTITY",
+    "ROUTE",
+    "VALIDATE_PATH",
+    "VALIDATE_MANIFEST_SEMANTICS",
+    "ATTACH_RELATIONS",
+    "ATTACH_PROVENANCE",
+    "CREATE",
+    "INDEX"
+  ],
+  "requiredManifestSemantics": ["id", "classification", "owner", "relations", "provenance"],
+  "identityPolicy": "ONE_CANONICAL_ASSET_ID_ONE_LOCATION",
+  "relationshipPolicy": "RELATION_EDGES_NOT_FOLDER_DUPLICATION",
+  "migrationPolicy": "MOVE_THEN_REMOVE_OLD_CANONICAL_LOCATION_AFTER_REFERENCE_UPDATE",
+  "codeDirectoryPolicy": "DO_NOT_FORCE_APPLICATION_SOURCE_PACKAGE_TREES_INTO_THIS_TAXONOMY; APPLY_TO_GOVERNED_INFORMATION_ASSETS_AND_SKILL_CONTENT",
+  "branchLifecycle": {
+    "onePurposeOneWorkingBranch": true,
+    "temporaryBranchMustBeDeletedAfterConvergence": true,
+    "canonicalWorkBranchMustBeLinkedToIssueOrPullRequest": true,
+    "duplicatePurposeBranchesAreGovernanceDebt": true
+  }
+}

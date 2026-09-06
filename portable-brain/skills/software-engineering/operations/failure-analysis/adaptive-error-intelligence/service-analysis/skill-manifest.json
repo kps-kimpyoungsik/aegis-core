@@ -1,0 +1,95 @@
+{
+  "skill": {
+    "id": "portable-brain.adaptive-error-intelligence",
+    "version": "0.3.0",
+    "status": "CANDIDATE",
+    "classification": {
+      "field": "software-engineering",
+      "area": "operations",
+      "relation": "failure-analysis",
+      "module": "adaptive-error-intelligence",
+      "unit": "service-analysis",
+      "semanticDepth": 5
+    },
+    "owner": "portable-brain",
+    "relations": [
+      "DEPENDS_ON:failure-memory",
+      "USES:structural-knowledge",
+      "VALIDATES_WITH:independent-verifier",
+      "PRODUCES:failure-experience",
+      "RELATED_TO:ci-governance",
+      "RELATED_TO:recovery",
+      "RELATED_TO:security"
+    ],
+    "purpose": "Evidence-first adaptive failure intake, localization, correlation, causal analysis, recurrence prevention, canonical handoff, and verified learning.",
+    "triggers": [
+      "error notification",
+      "failed check",
+      "repeated failure",
+      "cross-domain regression",
+      "high-impact change",
+      "external quota or account-state failure"
+    ],
+    "outputs": [
+      "failure_signature",
+      "failure_family",
+      "evidence_package",
+      "causal_hypothesis",
+      "owner_handoff",
+      "prevention_candidate",
+      "error_experience"
+    ],
+    "execution": {
+      "kernel": "aegis.brain.skill.AdaptiveErrorIntelligenceKernel",
+      "intakePipeline": "aegis.brain.skill.ErrorIntakePipeline",
+      "informationRouter": "aegis.brain.skill.InformationTreeGovernanceKernel",
+      "verification": "portable-brain/verify.sh"
+    },
+    "routing": {
+      "pipeline": [
+        "NORMALIZE_NOTIFICATION",
+        "FINGERPRINT",
+        "CORRELATE",
+        "CLASSIFY",
+        "RESOLVE_CANONICAL_OWNER",
+        "HANDOFF",
+        "REMEMBER"
+      ],
+      "duplicateWorkSuppression": true,
+      "unknownOwner": "portable-brain.adaptive-error-intelligence"
+    },
+    "authority": {
+      "selfImprove": [
+        "retrieval_order",
+        "analysis_depth",
+        "evidence_weight",
+        "tool_order",
+        "context_packaging",
+        "stop_retry_strategy",
+        "fingerprint_candidate",
+        "owner_routing_candidate"
+      ],
+      "protected": [
+        "Constitution",
+        "Root Authority",
+        "Independent Verifier",
+        "Audit Ledger",
+        "Security Policy",
+        "Secret Boundary",
+        "Promotion Gate",
+        "Production Permission Root"
+      ]
+    },
+    "quality": {
+      "failClosed": true,
+      "promotion": "target improvement + held-out regression preservation + sufficient evidence",
+      "externalFailureRule": "external account/quota failures never become code-pass evidence"
+    },
+    "provenance": {
+      "baselineMainSha": "f65d9fccdd4aeefefa2537868ec9ffb309b0272a",
+      "sourcePr": 113,
+      "informationTreeMigration": true,
+      "mailFailureFamiliesObserved": ["github-actions-billing-lock", "vercel-daily-capacity", "codex-review-usage-limit", "ci-fanout"]
+    }
+  }
+}

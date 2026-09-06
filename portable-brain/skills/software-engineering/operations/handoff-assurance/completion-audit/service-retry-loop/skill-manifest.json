@@ -1,0 +1,47 @@
+{
+  "skill": {
+    "id": "portable-brain.handoff-completion-assurance",
+    "version": "0.1.0",
+    "status": "CANDIDATE",
+    "classification": {
+      "field": "software-engineering",
+      "area": "operations",
+      "relation": "handoff-assurance",
+      "module": "completion-audit",
+      "unit": "service-retry-loop",
+      "semanticDepth": 5
+    },
+    "owner": "portable-brain",
+    "relations": [
+      "USES:adaptive-error-intelligence",
+      "USES:failure-memory",
+      "VALIDATES_WITH:independent-verifier",
+      "PRODUCES:handoff-audit-experience",
+      "RELATED_TO:ci-governance",
+      "RELATED_TO:recovery",
+      "RELATED_TO:external-capacity"
+    ],
+    "purpose": "Audit delegated work until independently evidenced completion and route incomplete work through bounded retry, re-handoff, wait, validation, or escalation actions.",
+    "triggers": ["handoff created", "owner handoff", "work status audit", "stale delegated work", "failed validation", "external blocker recovery"],
+    "outputs": ["audit_state", "completion_decision", "retry_decision", "required_evidence", "rehandoff_decision", "escalation_decision", "audit_experience"],
+    "execution": {
+      "kernel": "aegis.brain.skill.HandoffCompletionAuditKernel",
+      "verification": "portable-brain/verify.sh"
+    },
+    "authority": {
+      "selfImprove": ["stale_threshold_candidate", "retry_budget_candidate", "owner_routing_candidate", "evidence_requirement_candidate"],
+      "protected": ["Constitution", "Root Authority", "Independent Verifier", "Audit Ledger", "Security Policy", "Promotion Gate", "Production Permission Root"]
+    },
+    "quality": {
+      "failClosed": true,
+      "completionRule": "acceptance criteria satisfied + validation evidence present + no unresolved blocker",
+      "promotion": "target improvement + held-out regression preservation + sufficient evidence"
+    },
+    "provenance": {
+      "baselineMainSha": "f65d9fccdd4aeefefa2537868ec9ffb309b0272a",
+      "sourcePr": 113,
+      "trackingIssue": 116,
+      "initialAuditSnapshot": 117
+    }
+  }
+}
