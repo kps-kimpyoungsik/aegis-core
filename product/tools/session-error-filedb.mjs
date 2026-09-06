@@ -77,6 +77,9 @@ export function validateSessionErrorRecord(record) {
     workItemId: typeof record.workItemId === 'string' && record.workItemId.trim() !== ''
       ? record.workItemId.trim()
       : null,
+    episodeId: typeof record.episodeId === 'string' && record.episodeId.trim() !== ''
+      ? record.episodeId.trim()
+      : 'default',
     failureFingerprint,
     state,
     observedAt: new Date(observedAt).toISOString(),
@@ -94,7 +97,8 @@ export function sessionErrorIdentity(record) {
   return [
     validated.sessionId,
     validated.workItemId ?? '-',
-    validated.failureFingerprint
+    validated.failureFingerprint,
+    validated.episodeId
   ].join('|');
 }
 
@@ -177,6 +181,26 @@ export function retryDecision(record, {
   return { retryAllowed: false, action: 'FAIL_CLOSED', reason: current.state };
 }
 
+export function assertAppendTransition(history, nextRecord) {
+  const next = validateSessionErrorRecord(nextRecord);
+  const sameSession = history.filter((record) => record?.sessionId === next.sessionId);
+  const latest = reduceLatestSessionErrorState(sameSession, next.sessionId)
+    .find((record) => sessionErrorIdentity(record) === sessionErrorIdentity(next));
+
+  if (!latest) return next;
+  if (latest.eventId === next.eventId) {
+    throw new Error('AEGIS-FILEDB-010 duplicate eventId for the same error identity');
+  }
+  if (compareRecordOrder(next, latest) <= 0) {
+    throw new Error('AEGIS-FILEDB-011 append event must be newer than the current identity state');
+  }
+  if (TERMINAL_SESSION_ERROR_STATES.includes(latest.state)
+      && !TERMINAL_SESSION_ERROR_STATES.includes(next.state)) {
+    throw new Error('AEGIS-FILEDB-012 terminal error identity cannot reactivate; use a new episodeId');
+  }
+  return next;
+}
+
 export class SessionErrorFileDb {
   constructor({ rootDir, sessionId }) {
     this.rootDir = path.resolve(requireText(rootDir, 'rootDir'));
@@ -186,6 +210,8 @@ export class SessionErrorFileDb {
 
   async append(record) {
     const validated = validateSessionErrorRecord({ ...record, sessionId: this.sessionId });
+    const history = await this.readAll();
+    assertAppendTransition(history, validated);
     await mkdir(path.dirname(this.filePath), { recursive: true });
     await appendFile(this.filePath, `${JSON.stringify(validated)}\n`, { encoding: 'utf8', flag: 'a' });
     return validated;
