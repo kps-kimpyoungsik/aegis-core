@@ -1,0 +1,89 @@
+{
+  "skill": {
+    "id": "portable-brain.adaptive-error-intelligence",
+    "version": "0.1.0",
+    "status": "CANDIDATE",
+    "purpose": "Detect, localize, explain, prevent, and learn from software/runtime/CI/data/security/release failures using evidence-first multi-layer analysis rather than surface-error matching.",
+    "triggers": [
+      "error notification or failed check",
+      "generic exit-code failure",
+      "repeated or clustered failure signature",
+      "cross-workflow regression",
+      "schema or migration failure",
+      "security boundary regression",
+      "release/recovery failure",
+      "unexpected behavioral drift",
+      "high-impact code/configuration change"
+    ],
+    "exclusions": [
+      "simple deterministic failures already handled by an existing canonical validator",
+      "requests to weaken protected verifiers, security boundaries, authority roots, audit, or promotion gates",
+      "automatic production mutation without explicit authority"
+    ],
+    "inputs": [
+      "task_or_incident",
+      "current_revision",
+      "baseline_revision",
+      "changed_paths",
+      "runtime_or_ci_evidence",
+      "dependency_and_relationship_graph",
+      "failure_memory",
+      "provenance",
+      "authority_scope",
+      "quality_targets"
+    ],
+    "outputs": [
+      "failure_signature",
+      "complexity_and_impact_classification",
+      "evidence_package",
+      "causal_hypotheses",
+      "canonical_owner_handoff",
+      "prevention_candidate",
+      "validation_plan",
+      "recurrence_test",
+      "learning_candidate"
+    ],
+    "required_tools": [
+      "revision_and_diff_reader",
+      "test_and_runtime_evidence_reader",
+      "structural_dependency_analyzer",
+      "failure_memory_retriever",
+      "optional_static_dataflow_analyzer",
+      "optional_dynamic_trace_analyzer",
+      "optional_external_research_retriever"
+    ],
+    "authority": {
+      "read": "within task authority",
+      "propose": "evolvable surfaces only",
+      "mutate": "requires normal repository/tool authority gates",
+      "protected_surfaces": [
+        "Constitution",
+        "Root Authority",
+        "Audit Ledger",
+        "Independent Verifier",
+        "Security Policy",
+        "Secret Boundary",
+        "Promotion Gate",
+        "Production Permission Root"
+      ]
+    },
+    "context_cost": "adaptive",
+    "quality": {
+      "promotion": "Target improvement AND no unacceptable held-out regression AND sufficient evidence",
+      "fail_closed": true
+    },
+    "provenance": {
+      "baseline_main_sha": "f65d9fccdd4aeefefa2537868ec9ffb309b0272a",
+      "derived_from": [
+        "AEGIS Master Implementation Concept v2.0",
+        "Structural Knowledge Fabric",
+        "Memory/Provenance/Work Continuity Constitution",
+        "LLM Work Execution Learning Constitution",
+        "Evidence-Driven Self-Harness Constitution",
+        "Learnable Scaffold Constitution",
+        "Portable Agent Brain Constitution",
+        "2026-09-06 GitHub RCA for PR #108"
+      ]
+    }
+  }
+}
