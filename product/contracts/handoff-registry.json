@@ -99,10 +99,10 @@
       "ownerResponsibility": "responsibility",
       "capabilities": [],
       "issueRef": 116,
-      "state": "IN_PROGRESS",
+      "state": "VALIDATING",
       "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
-      "nextAction": "CONNECT_REGISTRY_RESOLVER_AND_PERIODIC_AUDIT_EXECUTION",
-      "retryPolicy": "AUDIT_AGAIN_AFTER_OWNER_ACTION_OR_BLOCKER_STATE_CHANGE",
+      "nextAction": "OBTAIN_EXACT_HEAD_REMOTE_VERIFICATION_AND_PERSIST_AUDIT_EVENTS_BEFORE_COMPLETION",
+      "retryPolicy": "AUDIT_AGAIN_AFTER_OWNER_ACTION_OR_BLOCKER_STATE_CHANGE; NO_PROMOTION_WITHOUT_EXECUTED_VERIFIER",
       "rootCauseStatus": "CONFIRMED"
     }
   ]
