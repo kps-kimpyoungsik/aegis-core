@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "capabilities": [
-    {"id":"governance.session-collision-control","domain":"governance","ownerResponsibility":"responsibility","canonicalPaths":["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/workstreams/","product/tools/workstream-collision-check.mjs"],"status":"CANDIDATE"},
+    {"id":"governance.session-collision-control","domain":"governance","ownerResponsibility":"responsibility","canonicalPaths":["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/workstreams/","product/tools/workstream-collision-check.mjs"],"status":"ACTIVE"},
     {"id":"runtime.task-lifecycle","domain":"runtime-execution","ownerResponsibility":"application-runtime","canonicalPaths":["runtime-kernel/","product/packages/application-runtime/"],"status":"ACTIVE"},
     {"id":"runtime.harness-execution","domain":"runtime-execution","ownerResponsibility":"harness-runtime","canonicalPaths":["runtime-kernel/","product/packages/harness-runtime/"],"status":"ACTIVE"},
     {"id":"brain.memory-lifecycle","domain":"portable-brain","ownerResponsibility":"memory-runtime","canonicalPaths":["portable-brain/","product/packages/memory-runtime/"],"status":"ACTIVE"},
