@@ -63,21 +63,32 @@ matches_any_prefix() {
 
 GATE_SELF_CHANGED=false
 for path in "${CHANGED_PATHS[@]}"; do
-  if [[ "$path" == "scripts/precommit-verify.sh" || "$path" == ".github/workflows/precommit-regression-gate.yml" ]]; then
+  if [[ "$path" == "scripts/precommit-verify.sh" || "$path" == "scripts/information-tree-guard.mjs" || "$path" == ".github/workflows/precommit-regression-gate.yml" ]]; then
     GATE_SELF_CHANGED=true
     break
   fi
 done
 
-# Repository-wide anti-duplication gate. Reuse the canonical product tools instead
-# of creating parallel duplicate/ownership implementations for non-product changes.
 require_command node
+
+# Repository-wide information creation gate for governed skill information.
+# Runs before expensive verification so invalid flat/deep/unclassified information fails fast.
+node scripts/information-tree-guard.mjs
+
+# Repository-wide anti-duplication gate. Reuse canonical product tools instead
+# of creating parallel duplicate/ownership implementations for non-product changes.
 (
   cd product
   node tools/ownership-check.mjs
   node tools/workstream-collision-check.mjs
   node tools/duplicate-check.mjs
 )
+
+if $GATE_SELF_CHANGED || matches_any_prefix portable-brain; then
+  require_command java
+  require_command javac
+  bash portable-brain/verify.sh
+fi
 
 if $GATE_SELF_CHANGED || matches_any_prefix product; then
   require_command npm
