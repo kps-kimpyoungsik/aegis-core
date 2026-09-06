@@ -1,0 +1,22 @@
+{
+  "id": "WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION",
+  "sessionClass": "security-release",
+  "state": "CANDIDATE",
+  "branch": "release/r1.18-data-plane-tenant-isolation-20260906",
+  "baselineMainSha": "7bd1efcc87f3b33d49e27a4b6345a844d0ea923c",
+  "ownerResponsibility": "data-plane",
+  "capabilityIds": ["data-plane.tenant-isolation", "data-plane.postgres-rls"],
+  "touchPaths": [
+    "data-plane/live-integration/sql/002_tenant_isolation.sql",
+    "data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh",
+    ".github/workflows/r1.18-data-plane-tenant-isolation.yml"
+  ],
+  "decision": "ADAPT_EXISTING_DATA_PLANE_FAIL_CLOSED",
+  "constraints": [
+    "No API authentication or RBAC ownership change",
+    "No Root Authority or production approval change",
+    "Tenant context absence must expose zero tenant rows",
+    "Cross-tenant write must be denied by PostgreSQL RLS"
+  ],
+  "rollbackPoint": "main@7bd1efcc87f3b33d49e27a4b6345a844d0ea923c"
+}
