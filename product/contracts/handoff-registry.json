@@ -1,0 +1,109 @@
+{
+  "version": "1.0.0",
+  "baselineMainSha": "12a4baec9f501a96c9087e37e24da899447ba23a",
+  "status": "CANDIDATE",
+  "identityPolicy": "WORK_ITEM_ID_AND_FAILURE_FINGERPRINT_ARE_STABLE; ISSUE_PR_REFS_ARE_MUTABLE_INSTANCES",
+  "completionPolicy": "HANDOFF_CREATED_IS_NOT_COMPLETED; COMPLETED_REQUIRES_ACCEPTANCE_VALIDATION_NO_BLOCKER",
+  "discoveryOrder": [
+    "domain",
+    "ownerResponsibility",
+    "capability",
+    "failureFingerprint",
+    "workstreamOrPr",
+    "issueRef",
+    "fallbackGitHubSearch"
+  ],
+  "items": [
+    {
+      "id": "AEGIS-HANDOFF-CI-FANOUT-001",
+      "failureFingerprint": "github-actions|ci-governance|dispatch|workflow-fanout|same-head-sha",
+      "domain": "release-evolution",
+      "ownerResponsibility": "release-convergence",
+      "capabilities": ["release.branch-protection"],
+      "issueRef": 109,
+      "state": "RETRY_DUE",
+      "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
+      "nextAction": "IMPLEMENT_PRECHECK_AND_FANOUT_BUDGET_THEN_VALIDATE",
+      "retryPolicy": "NO_BLIND_RERUN; RETRY_AFTER_RELEVANT_CHANGE_AND_VALIDATION_CAPACITY",
+      "rootCauseStatus": "OBSERVED"
+    },
+    {
+      "id": "AEGIS-HANDOFF-DATA-TENANT-001",
+      "failureFingerprint": "postgresql|data-security|migration|tenant-isolation|canonical-schema",
+      "domain": "data-plane",
+      "ownerResponsibility": "storage-runtime",
+      "capabilities": [],
+      "issueRef": 110,
+      "state": "BLOCKED_DEPENDENCY",
+      "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
+      "nextAction": "IMPLEMENT_AND_RUN_MIGRATION_TENANT_VALIDATION_WHEN_RUNNER_AVAILABLE",
+      "retryPolicy": "FIX_FIRST; REVALIDATE_AFTER_RELEVANT_CHANGE",
+      "rootCauseStatus": "OBSERVED"
+    },
+    {
+      "id": "AEGIS-HANDOFF-EXTERNAL-CAPACITY-001",
+      "failureFingerprint": "external-provider|capacity|request-admission|quota-limit|account-scope",
+      "domain": "release-evolution",
+      "ownerResponsibility": "release-convergence",
+      "capabilities": [],
+      "issueRef": 111,
+      "state": "BLOCKED_EXTERNAL",
+      "blockedBy": [],
+      "nextAction": "WAIT_FOR_EXTERNAL_CAPACITY_CHANGE_THEN_CANARY",
+      "retryPolicy": "SUPPRESS_UNTIL_EXTERNAL_STATE_CHANGES; ONE_CANARY_THEN_BOUNDED_RESUME",
+      "rootCauseStatus": "CONFIRMED"
+    },
+    {
+      "id": "AEGIS-HANDOFF-RECOVERY-001",
+      "failureFingerprint": "postgresql|recovery-release|validation|backup-restore-rollback|canonical-state",
+      "domain": "release-evolution",
+      "ownerResponsibility": "release-convergence",
+      "capabilities": [],
+      "issueRef": 112,
+      "state": "BLOCKED_DEPENDENCY",
+      "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001", "AEGIS-HANDOFF-DATA-TENANT-001"],
+      "nextAction": "VALIDATE_RECOVERY_CHAIN_AFTER_DEPENDENCIES_CLEAR",
+      "retryPolicy": "NO_RETRY_UNTIL_DEPENDENCY_EVIDENCE_CHANGES",
+      "rootCauseStatus": "OBSERVED"
+    },
+    {
+      "id": "AEGIS-HANDOFF-GHA-BILLING-001",
+      "failureFingerprint": "github-actions|external-platform-account|pre-run-admission|billing-lock|zero-runner-steps",
+      "domain": "release-evolution",
+      "ownerResponsibility": "release-convergence",
+      "capabilities": [],
+      "issueRef": 114,
+      "state": "BLOCKED_EXTERNAL",
+      "blockedBy": [],
+      "nextAction": "WAIT_FOR_BILLING_STATE_CHANGE_THEN_ONE_CHEAP_CANARY",
+      "retryPolicy": "SUPPRESS_UNTIL_EXTERNAL_STATE_CHANGES; REQUIRE_REAL_RUNNER_STEP_BEFORE_RESUME",
+      "rootCauseStatus": "CONFIRMED"
+    },
+    {
+      "id": "AEGIS-HANDOFF-BRANCH-DEBT-001",
+      "failureFingerprint": "git|governance|branch-lifecycle|duplicate-purpose-branches|workstream-sprawl",
+      "domain": "governance",
+      "ownerResponsibility": "responsibility",
+      "capabilities": [],
+      "issueRef": 115,
+      "state": "REHANDOFF_REQUIRED",
+      "blockedBy": [],
+      "nextAction": "INVENTORY_UNIQUE_COMMITS_AND_REFERENCES_BEFORE_AUTHORIZED_CLEANUP",
+      "retryPolicy": "NO_DESTRUCTIVE_AUTO_DELETE; REHANDOFF_IF_OWNER_OR_AUTHORITY_UNRESOLVED",
+      "rootCauseStatus": "CONFIRMED"
+    },
+    {
+      "id": "AEGIS-HANDOFF-COMPLETION-AUDIT-001",
+      "failureFingerprint": "aegis|handoff-assurance|audit|delivery-not-completion|cross-session",
+      "domain": "governance",
+      "ownerResponsibility": "responsibility",
+      "capabilities": [],
+      "issueRef": 116,
+      "state": "IN_PROGRESS",
+      "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
+      "nextAction": "CONNECT_REGISTRY_RESOLVER_AND_PERIODIC_AUDIT_EXECUTION",
+      "retryPolicy": "AUDIT_AGAIN_AFTER_OWNER_ACTION_OR_BLOCKER_STATE_CHANGE",
+      "rootCauseStatus": "CONFIRMED"
+    }
+  ]
+}
