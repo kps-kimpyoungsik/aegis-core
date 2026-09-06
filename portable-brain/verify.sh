@@ -41,6 +41,7 @@ run_and_verify_count() {
 run_and_verify_count aegis.brain.memory.MemoryKernelTest memory-kernel-count.txt
 run_and_verify_count aegis.brain.knowledge.KnowledgeKernelTest knowledge-kernel-count.txt
 run_and_verify_count aegis.brain.skill.SkillAssetKernelTest skill-asset-kernel-count.txt
+run_and_verify_count aegis.brain.skill.AdaptiveErrorIntelligenceKernelTest adaptive-error-intelligence-count.txt
 run_and_verify_count aegis.brain.retrieval.RetrievalKernelTest retrieval-kernel-count.txt
 run_and_verify_count aegis.brain.portability.BrainPortabilityKernelTest portability-kernel-count.txt
 run_and_verify_count aegis.brain.PortableBrainCompositeTest composite-kernel-count.txt
