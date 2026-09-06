@@ -1,0 +1,116 @@
+name: R1.18 Data Plane Tenant Isolation
+
+on:
+  pull_request:
+    paths:
+      - 'data-plane/**'
+      - '.github/workflows/r1.18-data-plane-tenant-isolation.yml'
+      - 'product/contracts/workstreams/WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tenant-isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegis
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis-ci
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Apply canonical PostgreSQL migrations
+        env:
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_HOST: 127.0.0.1
+          AEGIS_PG_PORT: '54329'
+          AEGIS_PG_DB: aegis
+          AEGIS_PG_USER: aegis
+        run: bash data-plane/live-integration/scripts/run-postgres-migrations.sh
+
+      - name: Verify migration ledger and concurrency guards
+        env:
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_HOST: 127.0.0.1
+          AEGIS_PG_PORT: '54329'
+          AEGIS_PG_DB: aegis
+          AEGIS_PG_USER: aegis
+        run: |
+          bash data-plane/live-integration/scripts/test-postgres-migrations.sh \
+            | tee /tmp/r1.18-migration-guards.txt
+          grep -F 'POSTGRES_MIGRATION_GUARDS=PASS' /tmp/r1.18-migration-guards.txt
+
+      - name: Verify tenant isolation
+        env:
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_URL: postgresql://aegis:aegis-ci@127.0.0.1:54329/aegis
+        run: |
+          bash data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh \
+            | tee /tmp/r1.18-tenant-isolation.txt
+          grep -Fx 'POSTGRES_TENANT_ISOLATION=PASS' /tmp/r1.18-tenant-isolation.txt
+
+      - name: Verify existing PostgreSQL live regression
+        env:
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_URL: postgresql://aegis:aegis-ci@127.0.0.1:54329/aegis
+        run: bash data-plane/live-integration/scripts/test-postgres-live.sh
+
+      - name: Verify recovery regression
+        env:
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_HOST: 127.0.0.1
+          AEGIS_PG_PORT: '54329'
+          AEGIS_PG_DB: aegis
+          AEGIS_PG_USER: aegis
+        run: bash data-plane/live-integration/scripts/test-postgres-recovery-live.sh
+
+      - name: Capture R1.18 evidence
+        run: |
+          mkdir -p build/r1.18-tenant-isolation
+          {
+            echo 'R1_18_DATA_PLANE_TENANT_ISOLATION=PASS'
+            echo 'postgres_image=postgres:16-alpine'
+            echo "psql=$(psql --version)"
+            echo 'migration_ledger_checksum_lock=EXECUTED'
+            echo 'production_db_role_qualification=NOT_EXECUTED'
+            echo 'production_database=NOT_EXECUTED'
+            echo "commit=${GITHUB_SHA}"
+          } | tee build/r1.18-tenant-isolation/evidence.txt
+          sha256sum \
+            data-plane/live-integration/sql/*.sql \
+            data-plane/live-integration/scripts/run-postgres-migrations.sh \
+            data-plane/live-integration/scripts/test-postgres-migrations.sh \
+            data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh \
+            data-plane/live-integration/scripts/test-postgres-live.sh \
+            data-plane/live-integration/scripts/test-postgres-recovery-live.sh \
+            > build/r1.18-tenant-isolation/source.sha256
+
+      - name: Upload R1.18 evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: r1.18-data-plane-tenant-isolation
+          path: build/r1.18-tenant-isolation/**
+          if-no-files-found: error
+          retention-days: 30

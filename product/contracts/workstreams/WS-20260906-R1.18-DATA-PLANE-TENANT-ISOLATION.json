@@ -2,21 +2,71 @@
   "id": "WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION",
   "sessionClass": "security-release",
   "state": "CANDIDATE",
-  "branch": "release/r1.18-data-plane-tenant-isolation-rebase-20260906",
-  "baselineMainSha": "7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d",
+  "branch": "release/r1.18-tenant-isolation-v3-20260906",
+  "baselineMainSha": "5f0e55949e6a657ed4769421d7319e4c4b8d25d4",
   "ownerResponsibility": "storage-runtime",
-  "capabilityIds": ["data.tenant-isolation"],
+  "capabilityIds": [
+    "data.tenant-isolation"
+  ],
   "touchPaths": [
     "data-plane/live-integration/sql/002_tenant_isolation.sql",
+    "data-plane/live-integration/scripts/run-postgres-migrations.sh",
+    "data-plane/live-integration/scripts/test-postgres-migrations.sh",
     "data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh",
+    "data-plane/live-integration/scripts/test-postgres-live.sh",
+    ".github/workflows/p4-live-storage-integration.yml",
+    ".github/workflows/p4-recovery-live.yml",
     ".github/workflows/r1.18-data-plane-tenant-isolation.yml"
   ],
-  "decision": "ADAPT_EXISTING_DATA_PLANE_FAIL_CLOSED",
+  "decision": "ADAPT_CANONICAL_MIGRATION_RUNNER_WITH_LEDGER_CHECKSUM_LOCK_IDEMPOTENCY",
+  "targetFilePreflight": {
+    "migration": "NEW_PATH",
+    "migrationRunner": "ACTIVE_CANDIDATE_ADAPTED",
+    "migrationGuardTest": "NEW_PATH",
+    "tenantIsolationTest": "NEW_PATH",
+    "postgresLiveRegression": "CHANGED_BY_THIS_CANDIDATE_AFTER_STATIC_RCA",
+    "liveStorageWorkflow": "CHANGED_BY_THIS_CANDIDATE",
+    "recoveryWorkflow": "CHANGED_BY_THIS_CANDIDATE",
+    "tenantIsolationWorkflow": "ACTIVE_CANDIDATE_ADAPTED",
+    "latestMainDelta": "GOVERNANCE_EVIDENCE_SKILL_ONLY_NO_DATA_PLANE_TARGET_OVERLAP"
+  },
+  "failurePreflight": {
+    "githubActionsAdmission": "BLOCKED_EXTERNAL_ISSUE_114",
+    "schemaConsumerKeyMismatch": "CORRECTED_PENDING_EXECUTION",
+    "duplicateConstraintDrift": "CORRECTED_PENDING_EXECUTION",
+    "migrationLedgerMissing": "CORRECTED_PENDING_EXECUTION",
+    "migrationChecksumImmutabilityMissing": "CORRECTED_PENDING_EXECUTION",
+    "migrationSingleWriterLockMissing": "CORRECTED_PENDING_EXECUTION",
+    "migrationSecondRunIdempotencyMissing": "CORRECTED_PENDING_EXECUTION"
+  },
   "constraints": [
     "No API authentication or RBAC ownership change",
     "No Root Authority or production approval change",
-    "Tenant context absence must expose zero tenant rows",
-    "Cross-tenant write must be denied by PostgreSQL RLS"
+    "No duplicate schema-application logic across PostgreSQL workflows",
+    "One canonical migration runner owns PostgreSQL migration execution",
+    "Applied migration checksum or name drift must fail closed",
+    "Concurrent migration writers must be rejected by PostgreSQL advisory lock",
+    "Migration and ledger record must commit atomically for supported transactional migrations",
+    "Non-transactional migrations require an explicit future contract and fail closed until then",
+    "Tenant context absence must expose zero tenant rows for non-bypass runtime roles",
+    "Cross-tenant writes must be denied by PostgreSQL RLS",
+    "Fresh and upgraded databases must converge to one tenant-aware primary/unique constraint set",
+    "CI PostgreSQL server and client major versions must remain compatible",
+    "GitHub Actions billing lock remains BLOCKED_EXTERNAL and cannot be treated as code PASS/FAIL",
+    "Git commit cadence is one batched commit per local calendar day unless emergency rollback is required",
+    "Every daily commit must refresh latest main and exact target-file status immediately before creation"
   ],
-  "rollbackPoint": "main@7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d"
+  "validation": {
+    "localStatic": "BASH_SYNTAX_PASS",
+    "githubActions": "NOT_EXECUTED_BLOCKED_EXTERNAL_ISSUE_114",
+    "requiredAfterRecovery": [
+      "migration guard physical test",
+      "tenant isolation negative test",
+      "P4 live regression",
+      "P4 recovery regression",
+      "R1.18 tenant isolation workflow",
+      "impacted product and release regressions"
+    ]
+  },
+  "rollbackPoint": "main@5f0e55949e6a657ed4769421d7319e4c4b8d25d4"
 }
