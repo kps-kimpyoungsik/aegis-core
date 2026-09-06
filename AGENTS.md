@@ -29,6 +29,8 @@ Immediately before every repository write, commit, PR promotion, or merge, every
 
 A commit is forbidden unless the candidate branch is reconciled against the latest observed `main` HEAD immediately before commit creation. Fetching `main` only at work start is insufficient. If the candidate does not contain or explicitly reconcile the latest canonical changes, the commit MUST NOT be created.
 
+For candidate metadata, `baselineMainSha` MUST mean the exact canonical `main` parent from which the candidate branch was created or last reconciled. It MUST NOT be rewritten on `main` merely to chase the current `main` HEAD, because doing so creates a self-referential moving-baseline loop. Baseline metadata advances only when a candidate is explicitly rebased/reconciled onto a newer canonical parent.
+
 If HEAD, ownership, or overlapping work changed after work began:
 
 - inspect the intervening commits and changed PR/workstream state;
@@ -84,6 +86,7 @@ Each substantive workstream should record at minimum:
 - No promotion using validation evidence from a superseded base or moved candidate HEAD.
 - No repository write without a final latest-main and active-work conflict recheck.
 - No commit unless the candidate is reconciled with the latest observed canonical `main` immediately before commit creation.
+- No self-referential baseline chasing on `main`; candidate baseline metadata records a reconciled parent SHA, not the commit that stores the metadata.
 - No merge without exact-head fencing when the Git surface supports it.
 - No cross-session assumption when Git evidence can resolve it.
 - No overwrite of concurrent work without explicit reconciliation.
