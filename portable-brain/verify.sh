@@ -43,6 +43,7 @@ run_and_verify_count aegis.brain.knowledge.KnowledgeKernelTest knowledge-kernel-
 run_and_verify_count aegis.brain.skill.SkillAssetKernelTest skill-asset-kernel-count.txt
 run_and_verify_count aegis.brain.skill.AdaptiveErrorIntelligenceKernelTest adaptive-error-intelligence-count.txt
 run_and_verify_count aegis.brain.skill.ErrorIntakePipelineTest error-intake-pipeline-count.txt
+run_and_verify_count aegis.brain.skill.HandoffCompletionAuditKernelTest handoff-completion-audit-count.txt
 run_and_verify_count aegis.brain.skill.InformationTreeGovernanceKernelTest information-tree-governance-count.txt
 run_and_verify_count aegis.brain.retrieval.RetrievalKernelTest retrieval-kernel-count.txt
 run_and_verify_count aegis.brain.portability.BrainPortabilityKernelTest portability-kernel-count.txt
