@@ -6,6 +6,7 @@
   "workspaces": ["packages/*","apps/*"],
   "scripts": {
     "check:ownership": "node tools/ownership-check.mjs",
+    "check:workstreams": "node tools/workstream-collision-check.mjs",
     "check:contracts": "node tools/contract-check.mjs",
     "check:architecture": "node tools/architecture-check.mjs",
     "check:boundaries": "node tools/package-boundary-check.mjs",
@@ -20,7 +21,7 @@
     "build:web": "npm run build --workspace=aegis-web-console",
     "test": "node --test tests/*.test.mjs",
     "bootstrap:workspace": "node tools/bootstrap-workspace.mjs",
-    "verify:deterministic": "npm run bootstrap:workspace && npm run check:ownership && npm run check:contracts && npm run check:architecture && npm run check:boundaries && npm run check:duplicates && npm run check:versions && npm run check:strict-config && npm run check:release && npm test",
+    "verify:deterministic": "npm run bootstrap:workspace && npm run check:ownership && npm run check:workstreams && npm run check:contracts && npm run check:architecture && npm run check:boundaries && npm run check:duplicates && npm run check:versions && npm run check:strict-config && npm run check:release && npm test",
     "verify:quality": "npm run lint && npm run typecheck:release && npm run build:web",
     "verify": "npm run verify:deterministic && npm run verify:quality",
     "test:storage": "node --test tests/storage-runtime.test.mjs",
@@ -35,8 +36,5 @@
     "test:web-projection": "node --test tests/web-projection.test.mjs",
     "test:e2e": "node --test tests/e2e-runtime.test.mjs"
   },
-  "devDependencies": {
-    "eslint": "^10.9.1",
-    "typescript": "^5.0.0"
-  }
+  "devDependencies": {"eslint":"^10.9.1","typescript":"^5.0.0"}
 }
