@@ -1,0 +1,60 @@
+name: R1.17 API Negative Security Corpus
+
+on:
+  pull_request:
+    paths:
+      - 'product/apps/api-server/**'
+      - 'product/tests/security-boundary.test.mjs'
+      - 'product/contracts/workstreams/WS-20260906-R1-17-API-NEGATIVE-CORPUS.json'
+      - '.github/workflows/r1.17-api-negative-security.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  negative-security-corpus:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked dependencies
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run API negative security corpus
+        working-directory: product
+        run: node --test tests/security-boundary.test.mjs
+      - name: Run collision control
+        working-directory: product
+        run: node tools/workstream-collision-check.mjs
+      - name: Run canonical deterministic regression
+        working-directory: product
+        run: npm run verify:deterministic
+      - name: Run lint, release typecheck, React SPA build
+        working-directory: product
+        run: npm run verify:quality
+      - name: Record bounded security evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.17-api-negative-security
+          {
+            printf 'R1_17_API_NEGATIVE_SECURITY=PASS\n'
+            printf 'HEAD_SHA=%s\n' "$GITHUB_SHA"
+            printf 'SCOPE=local-api-negative-regression-corpus\n'
+            printf 'EXTERNAL_PENETRATION_TEST=NOT_EXECUTED\n'
+            printf 'EDGE_WAF=NOT_EXECUTED\n'
+            printf 'PRODUCTION_IDP=NOT_EXECUTED\n'
+            printf 'GA_PROMOTION=NOT_EXECUTED\n'
+          } > build/r1.17-api-negative-security/evidence.txt
+          sha256sum build/r1.17-api-negative-security/evidence.txt > build/r1.17-api-negative-security/evidence.sha256
+      - name: Upload evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.17-api-negative-security
+          path: build/r1.17-api-negative-security/**
+          if-no-files-found: error
