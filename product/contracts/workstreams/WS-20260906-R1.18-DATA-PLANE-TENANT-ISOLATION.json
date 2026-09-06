@@ -5,7 +5,7 @@
   "branch": "release/r1.18-data-plane-tenant-isolation-rebase-20260906",
   "baselineMainSha": "7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d",
   "ownerResponsibility": "storage-runtime",
-  "capabilityIds": ["data.tenant-isolation", "data-plane.postgres-rls"],
+  "capabilityIds": ["data.tenant-isolation"],
   "touchPaths": [
     "data-plane/live-integration/sql/002_tenant_isolation.sql",
     "data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh",
