@@ -1,12 +1,14 @@
 {
-  "version": "1.0.0",
-  "baselineMainSha": "12a4baec9f501a96c9087e37e24da899447ba23a",
+  "version": "1.1.0",
+  "baselineMainSha": "dd7d07d9f589d36a3163f06ad62839f12049d3d5",
   "status": "CANDIDATE",
   "identityPolicy": "WORK_ITEM_ID_AND_FAILURE_FINGERPRINT_ARE_STABLE; ISSUE_PR_REFS_ARE_MUTABLE_INSTANCES",
   "completionPolicy": "HANDOFF_CREATED_IS_NOT_COMPLETED; COMPLETED_REQUIRES_ACCEPTANCE_VALIDATION_NO_BLOCKER",
+  "executionOwnershipPolicy": "CANONICAL_OWNER_IS_NOT_ACTIVE_EXECUTOR; ACTIVE_EXECUTION_REQUIRES_DURABLE_CLAIM_EVIDENCE",
   "discoveryOrder": [
     "domain",
     "ownerResponsibility",
+    "activeExecutor",
     "capability",
     "failureFingerprint",
     "workstreamOrPr",
@@ -22,8 +24,17 @@
       "capabilities": ["release.branch-protection"],
       "issueRef": 109,
       "state": "RETRY_DUE",
+      "executionClaim": {
+        "claimState": "UNCLAIMED",
+        "activeExecutorType": "UNCONFIRMED",
+        "activeExecutorId": "UNCONFIRMED",
+        "activeBranch": null,
+        "activePrRef": null,
+        "claimEvidence": "NO_CURRENT_ASSIGNEE_OR_ACTIVE_WORKSTREAM_PROVEN",
+        "intendedWriteSet": []
+      },
       "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
-      "nextAction": "IMPLEMENT_PRECHECK_AND_FANOUT_BUDGET_THEN_VALIDATE",
+      "nextAction": "CLAIM_EXISTING_WORK_ITEM_THEN_IMPLEMENT_PRECHECK_AND_FANOUT_BUDGET_THEN_VALIDATE",
       "retryPolicy": "NO_BLIND_RERUN; RETRY_AFTER_RELEVANT_CHANGE_AND_VALIDATION_CAPACITY",
       "rootCauseStatus": "OBSERVED"
     },
@@ -35,8 +46,17 @@
       "capabilities": [],
       "issueRef": 110,
       "state": "BLOCKED_DEPENDENCY",
+      "executionClaim": {
+        "claimState": "BLOCKED_DEPENDENCY",
+        "activeExecutorType": "UNCONFIRMED",
+        "activeExecutorId": "UNCONFIRMED",
+        "activeBranch": null,
+        "activePrRef": null,
+        "claimEvidence": "NO_ACTIVE_EXECUTOR_PROVEN; VALIDATION_DEPENDS_ON_RUNNER_RECOVERY",
+        "intendedWriteSet": []
+      },
       "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
-      "nextAction": "IMPLEMENT_AND_RUN_MIGRATION_TENANT_VALIDATION_WHEN_RUNNER_AVAILABLE",
+      "nextAction": "RESOLVE_ACTIVE_EXECUTOR_BEFORE_IMPLEMENTATION; RUN_MIGRATION_TENANT_VALIDATION_WHEN_RUNNER_AVAILABLE",
       "retryPolicy": "FIX_FIRST; REVALIDATE_AFTER_RELEVANT_CHANGE",
       "rootCauseStatus": "OBSERVED"
     },
@@ -48,6 +68,15 @@
       "capabilities": [],
       "issueRef": 111,
       "state": "BLOCKED_EXTERNAL",
+      "executionClaim": {
+        "claimState": "BLOCKED_EXTERNAL",
+        "activeExecutorType": "UNCONFIRMED",
+        "activeExecutorId": "UNCONFIRMED",
+        "activeBranch": null,
+        "activePrRef": null,
+        "claimEvidence": "EXTERNAL_STATE_WAIT; NO_PARALLEL_IMPLEMENTATION_REQUIRED",
+        "intendedWriteSet": []
+      },
       "blockedBy": [],
       "nextAction": "WAIT_FOR_EXTERNAL_CAPACITY_CHANGE_THEN_CANARY",
       "retryPolicy": "SUPPRESS_UNTIL_EXTERNAL_STATE_CHANGES; ONE_CANARY_THEN_BOUNDED_RESUME",
@@ -61,8 +90,17 @@
       "capabilities": [],
       "issueRef": 112,
       "state": "BLOCKED_DEPENDENCY",
+      "executionClaim": {
+        "claimState": "BLOCKED_DEPENDENCY",
+        "activeExecutorType": "UNCONFIRMED",
+        "activeExecutorId": "UNCONFIRMED",
+        "activeBranch": null,
+        "activePrRef": null,
+        "claimEvidence": "NO_ACTIVE_EXECUTOR_PROVEN; RECOVERY_VALIDATION_DEPENDS_ON_UPSTREAM_CLEARANCE",
+        "intendedWriteSet": []
+      },
       "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001", "AEGIS-HANDOFF-DATA-TENANT-001"],
-      "nextAction": "VALIDATE_RECOVERY_CHAIN_AFTER_DEPENDENCIES_CLEAR",
+      "nextAction": "RESOLVE_ACTIVE_EXECUTOR_AFTER_DEPENDENCIES_CLEAR; VALIDATE_RECOVERY_CHAIN",
       "retryPolicy": "NO_RETRY_UNTIL_DEPENDENCY_EVIDENCE_CHANGES",
       "rootCauseStatus": "OBSERVED"
     },
@@ -74,6 +112,15 @@
       "capabilities": [],
       "issueRef": 114,
       "state": "BLOCKED_EXTERNAL",
+      "executionClaim": {
+        "claimState": "BLOCKED_EXTERNAL",
+        "activeExecutorType": "UNCONFIRMED",
+        "activeExecutorId": "UNCONFIRMED",
+        "activeBranch": null,
+        "activePrRef": null,
+        "claimEvidence": "ACCOUNT_SIDE_REMEDIATION_REQUIRED; REPOSITORY_EXECUTOR_CANNOT_CLEAR_BLOCKER",
+        "intendedWriteSet": []
+      },
       "blockedBy": [],
       "nextAction": "WAIT_FOR_BILLING_STATE_CHANGE_THEN_ONE_CHEAP_CANARY",
       "retryPolicy": "SUPPRESS_UNTIL_EXTERNAL_STATE_CHANGES; REQUIRE_REAL_RUNNER_STEP_BEFORE_RESUME",
@@ -87,8 +134,17 @@
       "capabilities": [],
       "issueRef": 115,
       "state": "REHANDOFF_REQUIRED",
+      "executionClaim": {
+        "claimState": "REHANDOFF_REQUIRED",
+        "activeExecutorType": "UNCONFIRMED",
+        "activeExecutorId": "UNCONFIRMED",
+        "activeBranch": null,
+        "activePrRef": null,
+        "claimEvidence": "NO_AUTHORIZED_ACTIVE_CLEANUP_EXECUTOR_PROVEN",
+        "intendedWriteSet": []
+      },
       "blockedBy": [],
-      "nextAction": "INVENTORY_UNIQUE_COMMITS_AND_REFERENCES_BEFORE_AUTHORIZED_CLEANUP",
+      "nextAction": "RESOLVE_AUTHORIZED_EXECUTOR; INVENTORY_UNIQUE_COMMITS_AND_REFERENCES_BEFORE_CLEANUP",
       "retryPolicy": "NO_DESTRUCTIVE_AUTO_DELETE; REHANDOFF_IF_OWNER_OR_AUTHORITY_UNRESOLVED",
       "rootCauseStatus": "CONFIRMED"
     },
@@ -100,6 +156,23 @@
       "capabilities": [],
       "issueRef": 116,
       "state": "VALIDATING",
+      "executionClaim": {
+        "claimState": "VALIDATING",
+        "activeExecutorType": "WORKSTREAM",
+        "activeExecutorId": "governance/session-policy-latest-main-sync-20260906",
+        "activeBranch": "governance/session-policy-latest-main-sync-20260906",
+        "activePrRef": 121,
+        "claimEvidence": "PR_121_OPEN_DRAFT_WITH_CURRENT_CANDIDATE_COMMITS",
+        "intendedWriteSet": [
+          "product/contracts/handoff-registry.json",
+          "product/tools/handoff-discovery.mjs",
+          "product/tools/handoff-completion-audit.mjs",
+          "product/tools/handoff-evidence-adapter.mjs",
+          "product/tools/handoff-state-reducer.mjs",
+          "product/tests/handoff-*.test.mjs",
+          "docs/governance/HANDOFF_REGISTRY_CONTRACT.md"
+        ]
+      },
       "blockedBy": ["AEGIS-HANDOFF-GHA-BILLING-001"],
       "nextAction": "PERSIST_IMMUTABLE_AUDIT_EVENTS_IN_CANONICAL_STORAGE_AND_OBTAIN_EXACT_HEAD_REMOTE_VERIFICATION",
       "retryPolicy": "AUDIT_AGAIN_AFTER_OWNER_ACTION_OR_BLOCKER_STATE_CHANGE; NO_PROMOTION_WITHOUT_EXECUTED_VERIFIER",
