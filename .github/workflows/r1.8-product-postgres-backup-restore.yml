@@ -4,9 +4,22 @@ on:
   pull_request:
     paths:
       - 'product/**'
+      - 'data-plane/**'
       - 'storage-adapters/**'
       - 'integration-gate/**'
       - '.github/workflows/r1.8-product-postgres-backup-restore.yml'
+      - '.github/workflows/ci-impact-contract-guard.yml'
+      - 'scripts/ci-impact-contract-check.mjs'
+  push:
+    branches: [main]
+    paths:
+      - 'product/**'
+      - 'data-plane/**'
+      - 'storage-adapters/**'
+      - 'integration-gate/**'
+      - '.github/workflows/r1.8-product-postgres-backup-restore.yml'
+      - '.github/workflows/ci-impact-contract-guard.yml'
+      - 'scripts/ci-impact-contract-check.mjs'
   workflow_dispatch:
 
 permissions:
