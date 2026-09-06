@@ -1,7 +1,7 @@
 {
   "releaseId": "aegis-evolution-release-evidence-rebase",
   "status": "CANDIDATE",
-  "sourceRevision": "main@4e72cead7d647ddad5b64ec8bdc69821f2e78e1c",
+  "sourceRevision": "main@7bd1efcc87f3b33d49e27a4b6345a844d0ea923c",
   "contracts": "0.1.0",
   "packageBaseline": "0.8.0",
   "validation": {
@@ -69,5 +69,5 @@
     "productionApproval":"NOT_EXECUTED",
     "publicOpenApproval":"NOT_EXECUTED"
   },
-  "rollbackPoint": "main@4e72cead7d647ddad5b64ec8bdc69821f2e78e1c"
+  "rollbackPoint": "main@7bd1efcc87f3b33d49e27a4b6345a844d0ea923c"
 }
