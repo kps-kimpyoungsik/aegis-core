@@ -1,0 +1,24 @@
+{
+  "id": "WS-20260906-GOV-D0-D4-CLASSIFIER",
+  "sessionClass": "governance",
+  "state": "ACTIVE_CANDIDATE",
+  "branch": "governance/workstream-overlap-classifier-20260906",
+  "baseMainSha": "169010f71e163e0fee739281c15a03ffc937eef9",
+  "ownerResponsibility": "responsibility",
+  "capabilityIds": ["governance.session-collision-control"],
+  "touchPaths": [
+    "product/tools/workstream-collision-check.mjs",
+    "product/tests/workstream-collision-control.test.mjs",
+    "product/contracts/workstreams/WS-20260906-GOV-D0-D4-CLASSIFIER.json"
+  ],
+  "decision": "EXTEND_EXISTING_SOFTWARE_ASSET",
+  "excludedScope": [
+    "api-security-edge",
+    "release-convergence",
+    "data-plane",
+    "runtime-execution",
+    "portable-brain",
+    "ui-ux"
+  ],
+  "rollbackPoint": "main@169010f71e163e0fee739281c15a03ffc937eef9"
+}
