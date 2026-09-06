@@ -66,3 +66,40 @@ A later collection MUST:
 5. preserve occurrence counts while deduping by source identity and correlating by failure fingerprint;
 6. cross-check notification-derived execution claims against authoritative provider/run/job evidence;
 7. create a new immutable checkpoint entry rather than rewriting this historical observation as if it had been complete.
+
+---
+
+## MAIL-GITHUB-NOTIFICATIONS-2D-20260906-2232-KST
+
+- `sourceKind`: `GMAIL_NOTIFICATION_EVIDENCE`
+- `collectionPurpose`: bounded AEGIS GitHub-origin notification inventory and error-source coverage measurement
+- `collectionStartedAtApprox`: `2026-09-06T22:32:00+09:00`
+- `query`: `newer_than:2d from:notifications@github.com -in:spam -in:trash`
+- `querySignature`: exact query above; no private account identifier embedded
+- `privacyClass`: `PRIVATE_SOURCE / PUBLIC_SANITIZED_CHECKPOINT`
+- `pageSize`: 100
+- `pagesCollectedThisAttempt`: 6
+- `returnedRowsThisAttempt`: 600
+- `continuationPresentAfterPage6`: true
+- `completeness`: `PARTIAL_LIMIT_REACHED`
+- `sourceExhausted`: false
+- `safeHighWatermarkAdvanced`: false
+- `newestObservedSourceEventTime`: `2026-09-06T13:32:36Z` (`2026-09-06T22:32:36+09:00`)
+- `oldestObservedSourceEventTimeWithinProcessedPages`: `2026-09-06T04:22:43Z` (`2026-09-06T13:22:43+09:00`)
+- `declaredQueryWindow`: Gmail relative `newer_than:2d`; because continuation remains, only part of that declared two-day scope has been enumerated
+- `observedProcessedSpanApprox`: about 9 hours 10 minutes of source-event time between the newest and oldest boundary samples
+- `rawContinuationTokenStoredInPublicGit`: false
+- `nextResumePolicy`: restart the same exact query with a safe overlapping boundary or protected continuation state when available; continue pagination under a bounded budget; dedupe idempotently; append a new checkpoint; do not skip directly to newer mail
+- `reasonForStopping`: bounded execution budget, not source exhaustion
+
+### Deep-scope implications observed
+
+- Notification volume is high enough that a first-page or small `max_results` scan materially under-samples the source.
+- Relative time-window queries may contain hundreds of events from repeated CI fan-out and provider quota notifications; occurrence volume must not be mistaken for root-cause cardinality.
+- A strict timestamp-only resume would be unsafe because many notifications can share close/equal timestamps and because late arrivals/reordering are possible.
+- The collection pipeline must support page budgeting, continuation/gap preservation, overlap replay, idempotency, occurrence counting, causal correlation, and authoritative provider cross-checks independently.
+- No Gmail labels were modified; collection state is not encoded through read/unread status.
+
+### Current safe status
+
+`PARTIAL_LIMIT_REACHED / CONTINUATION_OPEN / HIGH_WATERMARK_NOT_ADVANCED`
