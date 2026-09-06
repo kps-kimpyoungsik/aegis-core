@@ -28,6 +28,16 @@ A zero registry match is `SEARCH_NOT_FOUND_REQUIRES_FALLBACK`, never proof of no
 
 Completion is audited outside the registry and requires acceptance criteria, exact-state validation/verifier evidence, no unresolved blocker, resolved canonical ownership, required regression/security/release evidence, provenance, and rollback data where applicable.
 
+## Evidence and projection model
+
+`product/tools/handoff-evidence-adapter.mjs` normalizes GitHub Issue/PR/workflow/job evidence. A failed job with `steps=[]` or `steps=null` is `NOT_EXECUTED`/pre-run admission evidence and must not be treated as a code validation failure. Only failed jobs with real executed steps become `validationFailed=true`.
+
+`product/tools/handoff-state-reducer.mjs` converts an audit decision into an immutable `HANDOFF_AUDITED` event and derives materialized handoff state from ordered events. Out-of-order audit provenance fails closed. Historical registry/evidence records are not silently rewritten.
+
+The Completion Audit capability owns discovery, evidence normalization, audit decision, immutable audit-event creation, and projection semantics. It does **not** create a parallel persistence subsystem.
+
+Durable event persistence must reuse canonical storage ownership. The existing `@aegis/storage-runtime` transaction/outbox/idempotency primitives are the integration target for persisted handoff audit events. Any durable persistence integration therefore requires ADAPT/HANDOFF to the canonical storage/application owners instead of introducing a governance-local database or file ledger.
+
 ## Retry model
 
 Retry decisions are explicit per item. Deterministic failure requires a relevant fix before rerun. External blockers suppress retry until external-state change and then require a cheap canary. Dependency blockers remain blocked until dependency evidence changes. Blind/infinite retry is prohibited.
