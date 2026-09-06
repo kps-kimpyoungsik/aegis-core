@@ -26,11 +26,24 @@ function evidence(overrides = {}) {
   };
 }
 
-test('marks complete only with acceptance, verifier evidence, and no blockers', () => {
+test('marks complete only with acceptance, verifier evidence, and no unresolved blockers', () => {
   const result = auditHandoff(item, evidence({ acceptanceComplete: true, validationEvidence: true }));
   assert.equal(result.state, 'COMPLETED');
   assert.equal(result.completed, true);
   assert.equal(result.retryAllowed, false);
+});
+
+test('cleared blockers no longer prevent verified completion', () => {
+  const result = auditHandoff(item, evidence({
+    acceptanceComplete: true,
+    validationEvidence: true,
+    blockers: [
+      { id: 'done', state: 'COMPLETED' },
+      { id: 'cleared', state: 'CLEARED' }
+    ]
+  }));
+  assert.equal(result.state, 'COMPLETED');
+  assert.equal(result.completed, true);
 });
 
 test('external blocker suppresses retry while state is unchanged', () => {
