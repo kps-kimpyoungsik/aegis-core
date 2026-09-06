@@ -23,17 +23,36 @@ No substantive design or implementation begins until the Latest-Main-Before-Work
 
 The intended write set MUST be bounded before mutation: canonical owner, capability, paths, contracts, datasets/events, authority surface, and expected validation gates. If this write set overlaps a newly discovered session or PR, stop and reconcile ownership before editing.
 
+## Target-File Git Status Preflight Invariant
+
+Before editing any implementation/design file, every session MUST inspect the Git state of the exact target files/directories it intends to touch.
+
+For each target path, determine at minimum:
+
+- whether the path already exists on current canonical `main`;
+- the latest canonical blob/file revision when it exists;
+- recent commits that changed the target or its owning package/contract;
+- whether an open PR or active workstream already touches the same path or semantic owner;
+- whether the candidate/local copy is behind, diverged, modified, staged, untracked, or otherwise not identical to the latest canonical source when a local Git worktree is available.
+
+Classify each intended target as `UNCHANGED`, `CHANGED_BY_OTHER_SESSION`, `ACTIVE_OVERLAP`, `NEW_PATH`, or `UNKNOWN` before editing. `CHANGED_BY_OTHER_SESSION`, `ACTIVE_OVERLAP`, and `UNKNOWN` require explicit reload/reconciliation or fail-closed handoff before mutation.
+
+When a local Git checkout is available, refresh remotes first and inspect branch/ahead-behind plus staged/unstaged/untracked target-file state. When only a remote Git surface is available, the canonical `main` file/blob revision, recent commit history, PR/workstream overlap, and exact target-path comparison are the required equivalent evidence.
+
+No work may start from a target file copied from stale session context when its current Git state can be resolved.
+
 ## Pre-Write / Pre-Commit Revalidation Invariant
 
-Immediately before every repository write, commit, PR promotion, or merge, every session MUST read `main` HEAD again and recheck relevant open PR/workstream overlap.
+Immediately before every repository write, commit, PR promotion, or merge, every session MUST refresh/read the newest remote canonical `main`, reload intersecting target files/contracts/registries, and recheck relevant open PR/workstream overlap.
 
 A commit is forbidden unless the candidate branch is reconciled against the latest observed `main` HEAD immediately before commit creation. Fetching `main` only at work start is insufficient. If the candidate does not contain or explicitly reconcile the latest canonical changes, the commit MUST NOT be created.
 
 For candidate metadata, `baselineMainSha` MUST mean the exact canonical `main` parent from which the candidate branch was created or last reconciled. It MUST NOT be rewritten on `main` merely to chase the current `main` HEAD, because doing so creates a self-referential moving-baseline loop. Baseline metadata advances only when a candidate is explicitly rebased/reconciled onto a newer canonical parent.
 
-If HEAD, ownership, or overlapping work changed after work began:
+If HEAD, target-file revision, ownership, or overlapping work changed after work began:
 
 - inspect the intervening commits and changed PR/workstream state;
+- reload every intersecting target file from the refreshed canonical source;
 - rerun ownership/capability/path/contract/dataset/event/authority collision checks against the new HEAD;
 - rebase/reconcile or supersede the candidate logically and technically;
 - rerun affected deterministic, quality, security, integration, and release gates on the refreshed combined baseline;
@@ -42,6 +61,8 @@ If HEAD, ownership, or overlapping work changed after work began:
 A test result obtained against an older HEAD is not sufficient promotion evidence for a newer HEAD.
 
 For merges/promotions, use an exact expected candidate head SHA when the Git surface supports it. If the candidate head moves after validation, previous validation is stale and promotion MUST fail closed until the new exact head is verified.
+
+If the newest remote canonical source or target-file state cannot be refreshed immediately before commit, record `PRE_COMMIT_SOURCE_SYNC_NOT_EXECUTED` and do not create or promote a canonical commit.
 
 ## Post-Write / Post-Commit Verification
 
@@ -69,11 +90,13 @@ Each substantive workstream should record at minimum:
 
 - `baselineMainSha`
 - latest-main check time or evidence reference
+- target-file Git status / revision evidence
 - intervening commit assessment
 - open PR / active workstream overlap assessment
 - canonical owner/capability decision
 - bounded intended write set / touched canonical paths
 - contract/dataset/event/authority collision result where applicable
+- `preCommitMainSha` or equivalent exact latest-source evidence
 - validation evidence tied to exact candidate head
 - resulting commit SHA when committed
 - post-write latest-main verification
@@ -82,11 +105,13 @@ Each substantive workstream should record at minimum:
 ## Canonical Invariants Added
 
 - No work from an unchecked stale Git baseline.
+- No target-file mutation before exact Git target status/revision inspection.
 - No duplicate implementation when a newer main commit or active canonical workstream already owns the capability.
 - No promotion using validation evidence from a superseded base or moved candidate HEAD.
-- No repository write without a final latest-main and active-work conflict recheck.
+- No repository write without a final latest-main, target-file, and active-work conflict recheck.
 - No commit unless the candidate is reconciled with the latest observed canonical `main` immediately before commit creation.
 - No self-referential baseline chasing on `main`; candidate baseline metadata records a reconciled parent SHA, not the commit that stores the metadata.
+- No canonical commit when latest remote source refresh is unavailable.
 - No merge without exact-head fencing when the Git surface supports it.
 - No cross-session assumption when Git evidence can resolve it.
 - No overwrite of concurrent work without explicit reconciliation.
@@ -94,7 +119,7 @@ Each substantive workstream should record at minimum:
 
 ## Mandatory Cross-Session Work Loop
 
-`SYNC MAIN -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> SYNC MAIN AGAIN -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
+`SYNC MAIN -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
 
 This loop is mandatory at the start of every continuation/wakeup cycle, not only at the beginning of a conversation.
 
