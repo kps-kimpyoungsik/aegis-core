@@ -1,7 +1,7 @@
 {
   "id": "WS-20260906-RELEASE-PREFLIGHT-METADATA-OWNERSHIP-CURRENT",
   "sessionClass": "release-evolution",
-  "state": "ACTIVE_CANDIDATE",
+  "state": "INTEGRATED",
   "branch": "release/preflight-metadata-ownership-fix-current-20260906",
   "baselineMainSha": "d8275289a384b58d103681813c69b0c427fbdef0",
   "ownerResponsibility": "release-convergence",
@@ -15,14 +15,28 @@
   ],
   "decision": "REUSE_PR87_ADAPT_CURRENT_MAIN_COMPOSE_STALE_WORKSTREAM_CLEANUP",
   "targetFileGitStatus": {
-    "releaseEvolutionPreflight": "UNCHANGED",
-    "releaseEvolutionPreflightTest": "UNCHANGED",
-    "legacyReleaseWorkstream72": "STALE_STATE_FROM_MERGED_PR",
-    "legacyReleaseWorkstream80": "STALE_STATE_FROM_MERGED_PR",
+    "releaseEvolutionPreflight": "UNCHANGED_AT_IMPLEMENTATION_BASE",
+    "releaseEvolutionPreflightTest": "UNCHANGED_AT_IMPLEMENTATION_BASE",
+    "legacyReleaseWorkstream72": "RECONCILED_INTEGRATED",
+    "legacyReleaseWorkstream80": "RECONCILED_INTEGRATED",
     "releaseManifest": "READ_ONLY_NOT_MUTATED",
     "r118Workstream": "UPSTREAM_CANONICAL_METADATA_HOTFIXED"
   },
   "preCommitMainSha": "d8275289a384b58d103681813c69b0c427fbdef0",
+  "verification": {
+    "prePromotionExactHead": "f3795a3c7c6b6f0d3d199ca6d3c69720f26cdb3d",
+    "triggeredWorkflows": 11,
+    "successfulWorkflows": 11,
+    "evolutionPreflightRun": 34012763309,
+    "productConvergenceRun": 34012763164,
+    "manifestBaselineMode": "not-applicable",
+    "deterministicTests": "105/105 PASS"
+  },
+  "integration": {
+    "mergedPr": 100,
+    "mergeCommitSha": "2f7dece9867d473cdc7e13b2e1f2a3b0f065fb04",
+    "metadataFinalizationBaseMainSha": "2f7dece9867d473cdc7e13b2e1f2a3b0f065fb04"
+  },
   "constraints": [
     "Manifest baseline is enforced only when the canonical manifest is actually mutated",
     "Release-number collision checks remain global and fail closed",
