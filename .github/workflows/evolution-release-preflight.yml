@@ -1,0 +1,50 @@
+name: Evolution Release Preflight
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-evolution-preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      AEGIS_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - name: Checkout full comparison history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Fail closed outside pull request context
+        if: github.event_name != 'pull_request'
+        run: |
+          echo 'AEGIS-EVO-REL-000 PR_BASE_SHA_REQUIRED'
+          exit 1
+      - name: Install locked dependencies
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Unit-test evolution rule
+        working-directory: product
+        run: node --test tests/release-evolution-preflight.test.mjs
+      - name: Verify exact baseline and release-number uniqueness
+        working-directory: product
+        run: npm run check:release-evolution
+      - name: Canonical regression
+        working-directory: product
+        run: |
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
