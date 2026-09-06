@@ -1,9 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "domains": [
     {"id":"governance","purpose":"constitution, canonical contracts, ownership and conflict decisions","ownerResponsibilities":["canonical-contracts","responsibility"],"roots":["docs/","product/contracts/"]},
     {"id":"runtime-execution","purpose":"task lifecycle, harness execution, worker and daemon runtime","ownerResponsibilities":["core-domain","application","harness-contracts","harness-runtime","harness-testkit","application-runtime","worker","daemon"],"roots":["runtime-kernel/","product/packages/","product/apps/worker/","product/apps/daemon/"]},
     {"id":"portable-brain","purpose":"memory, knowledge, retrieval and portable cognitive assets","ownerResponsibilities":["memory-contracts","memory-runtime","knowledge-contracts","retrieval-runtime"],"roots":["portable-brain/","product/packages/"]},
+    {"id":"asset-intelligence","purpose":"canonical asset identity, provenance, multimodal extraction, integrity lineage and rebuildable signal projections","ownerResponsibilities":["asset-contracts","asset-runtime"],"roots":["product/packages/asset-contracts/","product/packages/asset-runtime/"]},
     {"id":"data-plane","purpose":"storage contracts, atomic persistence, adapters, lifecycle and recovery","ownerResponsibilities":["storage-contracts","storage-runtime","storage-memory"],"roots":["data-plane/","storage-adapters/","product/packages/"]},
     {"id":"api-security-edge","purpose":"HTTP transport, authentication, principal, tenant, RBAC and abuse-control boundaries","ownerResponsibilities":["api-server"],"roots":["product/apps/api-server/","product/tests/"]},
     {"id":"ui-ux","purpose":"React SPA operational projection and user control surface","ownerResponsibilities":["web-console"],"roots":["product/apps/web-console/"]},

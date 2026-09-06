@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "responsibilities": [
     {"id":"canonical-contracts","owner":"@aegis/contracts","scope":"canonical schemas and protocol contracts"},
     {"id":"core-domain","owner":"@aegis/core-domain","scope":"canonical domain objects and invariants"},
@@ -17,6 +17,8 @@
     {"id":"knowledge-contracts","owner":"@aegis/knowledge-contracts","scope":"canonical knowledge lifecycle and retrieval match contracts"},
     {"id":"retrieval-runtime","owner":"@aegis/retrieval-runtime","scope":"selective exact/structural/relation/semantic retrieval and point context packaging"},
     {"id":"application-runtime","owner":"@aegis/application-runtime","scope":"task lifecycle integration across ownership, retrieval, harness, validation and memory capture"},
+    {"id":"asset-contracts","owner":"@aegis/asset-contracts","scope":"canonical asset identity, provenance, extractor plugin and lineage contracts"},
+    {"id":"asset-runtime","owner":"@aegis/asset-runtime","scope":"asset ingestion lifecycle, extraction routing, projection freshness and integrity orchestration"},
     {"id":"api-server","owner":"aegis-api-server","scope":"HTTP transport, typed command validation and application dispatch"},
     {"id":"worker","owner":"aegis-worker","scope":"queued application command execution adapter"},
     {"id":"daemon","owner":"aegis-daemon","scope":"worker lifecycle tick and health projection"},
