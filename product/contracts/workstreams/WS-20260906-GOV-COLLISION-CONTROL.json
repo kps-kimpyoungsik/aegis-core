@@ -1,11 +1,15 @@
 {
   "id":"WS-20260906-GOV-COLLISION-CONTROL",
   "sessionClass":"governance",
-  "state":"ACTIVE",
+  "state":"INTEGRATED",
   "branch":"governance/session-owner-capability-control-v3-20260906",
   "baseMainSha":"f029911b434604b29174c63d42a233a5920aa912",
   "ownerResponsibility":"responsibility",
   "capabilityIds":["governance.session-collision-control"],
   "touchPaths":["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/workstreams/WS-20260906-GOV-COLLISION-CONTROL.json","product/tools/workstream-collision-check.mjs","product/tests/workstream-collision-control.test.mjs","product/package.json","docs/governance/SESSION_OWNERSHIP_CAPABILITY_CONTROL.md","product/release/release-manifest.candidate.json"],
-  "decision":"CREATE_MINIMAL"
+  "decision":"CREATE_MINIMAL_PROMOTED",
+  "verification":{
+    "prePromotionHead":"8bff07f22aae8f2554776ebfcdfe95e7364569b9",
+    "releaseWorkflows":"12/12 SUCCESS"
+  }
 }
