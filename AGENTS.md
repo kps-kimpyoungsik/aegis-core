@@ -47,6 +47,26 @@ Every Skill invocation MUST preserve at minimum: task signature, Skill ID/versio
 
 Repeated stable Skill work MUST evolve according to `Repeated Work -> Pattern -> Existing Asset Search -> Candidate Skill/Scaffold -> Evaluation -> Target + Held-out Regression -> Promote/Reject`; deterministic repeated behavior should be moved into Policy/Validator/Library/Component/Service instead of remaining repeated LLM work.
 
+## Evidence Collection Scope & Watermark Invariant
+
+Every session, wake-up, automation, ingestion path, notification scan, and external evidence retrieval MUST read and apply `docs/governance/EVIDENCE_COLLECTION_SCOPE_GUIDE.md` whenever it collects Gmail/email notifications, GitHub Issues/PRs/Actions, provider events, logs, queues, webhooks, or other potentially paginated/partial evidence.
+
+A collection attempt MUST preserve its declared source/query scope, collection start/end time, observed source event-time bounds, page/partition count, item count, continuation/gap state, completeness state, privacy class, authoritative cross-check source, and safe resume boundary. `COLLECTED != COMPLETE`, `FIRST_PAGE != FULL_SOURCE`, `MESSAGE_TIMESTAMP != COLLECTION_TIMESTAMP`, `SEARCH_NOT_FOUND != NO_EVENT`, and `CURSOR_ADVANCED != SOURCE_EXHAUSTED` are canonical invariants.
+
+A single `lastSeenTimestamp` is insufficient as a durable checkpoint. Where supported, use a compound watermark such as `eventTimeHighWatermark + stableSourceIdTieBreaker + overlapWindow + querySignature + source/account/version scope`. Resume with an intentional overlap and idempotent dedupe so equal timestamps, late arrivals, backfills, source reordering, thread/message mutation, and clock precision/drift cannot create silent gaps.
+
+A durable high-watermark MUST NOT advance across a known continuation, missing page/partition, timeout/rate limit, permission gap, truncated result, source mutation, required-content retrieval failure, unknown timestamp normalization, or changed query scope. A later successful page does not erase an earlier gap.
+
+Collection MUST remain multi-dimensional. Do not convert `one notification -> one error`. Evaluate identity, causal fingerprint, temporal ordering, topology/fan-out, execution state, source authority, completeness, freshness, privacy/security, actionability, confidence, and retention. Preserve both source occurrence history and causal failure-family correlation.
+
+For mail evidence, `UNREAD` is not a durable ingestion checkpoint; thread identity is not message identity; subject/snippet is triage evidence, not necessarily root-cause evidence; and mail-reported CI failure MUST be cross-checked against authoritative workflow/job/step evidence before classifying a code regression.
+
+Public Git repositories MUST store only sanitized evidence-collection checkpoints. Private Gmail message/thread IDs, personal addresses, raw private bodies/snippets, opaque continuation/page tokens, authentication/session material, private attachment identifiers/content, and secrets MUST remain in protected source/private storage unless explicitly authorized and privacy-reviewed.
+
+Every substantive collection attempt MUST finish with one explicit completeness state such as `COMPLETE_FOR_DECLARED_SCOPE`, `PARTIAL_CONTINUATION_AVAILABLE`, `PARTIAL_LIMIT_REACHED`, `PARTIAL_SOURCE_ERROR`, `PARTIAL_AUTHORITY`, `PARTIAL_TIME_UNBOUNDED`, `UNKNOWN_COMPLETENESS`, or `NOT_EXECUTED`. Only `COMPLETE_FOR_DECLARED_SCOPE` may support completeness claims, and only for that exact bounded scope/query/version.
+
+Sanitized historical checkpoints are append-oriented evidence. Do not rewrite a previously partial checkpoint as though it had always been complete. A later collection should create a new checkpoint/reconciliation record and preserve the prior gap/provenance.
+
 ## Session Error Preflight Invariant
 
 Every continuation, wake-up, resumed workstream, or `continue` execution MUST inspect the current Git evidence for errors produced by the same session/workstream before selecting the next task.
@@ -145,6 +165,7 @@ Each substantive workstream should record at minimum:
 - `baselineMainSha`
 - latest-main check time or evidence reference
 - autonomous Skill discovery/invocation state and selected Skill evidence when applicable
+- external evidence collection scope/completeness/watermark or gap state when applicable
 - session/workstream error-preflight evidence and unresolved failure status
 - handoff discovery/audit state and active failure fingerprints when applicable
 - blocker/dependency state and retry/re-handoff/escalation decision when applicable
@@ -162,6 +183,10 @@ Each substantive workstream should record at minimum:
 
 ## Canonical Invariants Added
 
+- No collection-completeness claim without an explicit bounded scope and completeness state.
+- No durable watermark advance over known continuation, gap, truncation, permission failure, or partial source error.
+- No private raw mail/source identifiers or continuation tokens persisted into public Git without explicit authorization and privacy review.
+- No one-notification-one-root-cause assumption; preserve occurrence identity and causal correlation separately.
 - No substantial reusable procedure before autonomous Skill discovery when a matching Skill may exist.
 - No Skill invocation that bypasses exclusion, required-tool, authority, quality, provenance, context-budget, or verification gates.
 - No Candidate Skill silently treated as canonical/trusted behavior.
@@ -186,7 +211,7 @@ Each substantive workstream should record at minimum:
 
 ## Mandatory Cross-Session Work Loop
 
-`SYNC MAIN -> READ AGENTS + SKILL AUTO-INVOCATION GUIDE + HANDOFF DISCOVERY/COMPLETION GUIDE -> INSPECT THIS SESSION/WORKSTREAM ERRORS -> DISCOVER ACTIVE HANDOFFS/FINGERPRINTS/BLOCKERS -> BUILD TASK SIGNATURE -> DISCOVER/TRIGGER/AUTHORITY-GATE SKILLS -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> AUDIT COMPLETION -> COMPLETE/RETRY/REHANDOFF/WAIT/ESCALATE -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
+`SYNC MAIN -> READ AGENTS + SKILL AUTO-INVOCATION GUIDE + EVIDENCE COLLECTION SCOPE GUIDE + HANDOFF DISCOVERY/COMPLETION GUIDE -> INSPECT THIS SESSION/WORKSTREAM ERRORS -> LOAD LAST SAFE COLLECTION CHECKPOINTS/GAPS WHEN EXTERNAL EVIDENCE IS NEEDED -> DISCOVER ACTIVE HANDOFFS/FINGERPRINTS/BLOCKERS -> BUILD TASK SIGNATURE -> DISCOVER/TRIGGER/AUTHORITY-GATE SKILLS -> COLLECT EXTERNAL EVIDENCE WITH BOUNDED SCOPE/OVERLAP/COMPLETENESS -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> AUDIT COMPLETION -> COMPLETE/RETRY/REHANDOFF/WAIT/ESCALATE -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
 
 This loop is mandatory at the start of every continuation/wakeup cycle, not only at the beginning of a conversation.
 
