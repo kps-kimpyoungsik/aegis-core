@@ -1,0 +1,23 @@
+{
+  "id": "WS-20260906-P4-10-ASSET-CONVERGENCE",
+  "sessionClass": "research-learning",
+  "state": "BLOCKED",
+  "branch": null,
+  "baseMainSha": "f5776665626b6da55737bf55c99fa6ae2fd4e4fb",
+  "ownerResponsibility": null,
+  "capabilityIds": [],
+  "touchPaths": [],
+  "decision": "FAIL_CLOSED_PENDING_CANONICAL_OWNER",
+  "requestedCapabilities": [
+    "asset.multimodal-extraction",
+    "asset.artifact-integrity-lineage",
+    "storage.object-physical-integration-harness"
+  ],
+  "proposedCanonicalPaths": [
+    "product/packages/asset-contracts/",
+    "product/packages/asset-runtime/",
+    "product/tests/asset-*.test.mjs"
+  ],
+  "reason": "Current domain/capability/ownership registries do not define a canonical asset-ingestion or artifact-lineage owner. Production placement is blocked to prevent responsibility and storage-semantics duplication.",
+  "rollbackPoint": "main@f5776665626b6da55737bf55c99fa6ae2fd4e4fb"
+}
