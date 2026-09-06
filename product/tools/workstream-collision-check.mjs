@@ -33,9 +33,8 @@ export function classifyWorkstreamOverlap(left, right, capabilityById = new Map(
   );
   const sameOwner = left.ownerResponsibility === right.ownerResponsibility;
   const leftDomains = workstreamDomains(left, capabilityById);
-  const relatedDomain = [...leftDomains].some((domain) =>
-    workstreamDomains(right, capabilityById).has(domain),
-  );
+  const rightDomains = workstreamDomains(right, capabilityById);
+  const relatedDomain = [...leftDomains].some((domain) => rightDomains.has(domain));
 
   if (sharedCapabilities.length > 0 && !sameOwner) {
     return Object.freeze({ level: "D4", decision: "FREEZE", sharedCapabilities, overlappingPaths });
@@ -81,7 +80,9 @@ export function validateControlPlane({ ownership, domains, capabilities, workstr
       throw new Error(`AEGIS-WS-005 UNKNOWN_CAPABILITY_OWNER ${capability.id}:${capability.ownerResponsibility}`);
     }
     const domain = domainById.get(capability.domain);
+    const requiresCanonicalDomainOwner = capability.status !== "REFERENCE_ONLY";
     if (
+      requiresCanonicalDomainOwner &&
       capability.ownerResponsibility !== null &&
       !(domain.ownerResponsibilities ?? []).includes(capability.ownerResponsibility)
     ) {
