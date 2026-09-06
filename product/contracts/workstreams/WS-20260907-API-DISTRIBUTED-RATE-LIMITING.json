@@ -1,0 +1,34 @@
+{
+  "id": "WS-20260907-API-DISTRIBUTED-RATE-LIMITING",
+  "sessionClass": "implementation",
+  "state": "CANDIDATE",
+  "ownerResponsibility": "api-server",
+  "capabilityIds": ["api.distributed-rate-limiting"],
+  "touchPaths": [
+    "product/apps/api-server/distributed-rate-limiter.js",
+    "product/tests/distributed-rate-limiter.test.mjs",
+    "product/contracts/workstreams/WS-20260907-API-DISTRIBUTED-RATE-LIMITING.json"
+  ],
+  "baselineMainSha": "5f0e55949e6a657ed4769421d7319e4c4b8d25d4",
+  "preCommitMainSha": "5f0e55949e6a657ed4769421d7319e4c4b8d25d4",
+  "targetFileStatus": {
+    "distributed-rate-limiter.js": "NEW_PATH",
+    "distributed-rate-limiter.test.mjs": "NEW_PATH",
+    "workstream": "NEW_PATH"
+  },
+  "decision": "EXTEND_EXISTING_RATE_LIMIT_REQUEST_CONTRACT_WITH_DISTRIBUTED_ATOMIC_STORE",
+  "constraints": [
+    "Reuse createApiServer rateLimitRequest injection; do not create a second API server or parallel request pipeline",
+    "Do not add Redis or vendor SDK dependencies in API core",
+    "Distributed store increment must be atomic for a key and window",
+    "Tenant, principal, method and route remain part of the limiter key",
+    "Health probes remain outside the authenticated rate-limit boundary",
+    "Existing in-memory fixed-window limiter remains unchanged",
+    "No promotion while GitHub Actions PEF-001 remains BLOCKED_EXTERNAL"
+  ],
+  "validation": {
+    "localReference": "PASS_3_OF_3",
+    "githubActions": "NOT_EXECUTED_BLOCKED_EXTERNAL_PEF_001"
+  },
+  "rollbackPoint": "main@5f0e55949e6a657ed4769421d7319e4c4b8d25d4"
+}
