@@ -1,0 +1,66 @@
+name: Canonical Fast Preflight
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-fast-preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Resolve comparison base
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${PR_BASE_SHA:-}" ]]; then
+            base="${PR_BASE_SHA}"
+          elif [[ -n "${PUSH_BEFORE_SHA:-}" && ! "${PUSH_BEFORE_SHA}" =~ ^0+$ ]] && git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2>/dev/null; then
+            base="${PUSH_BEFORE_SHA}"
+          else
+            base="$(git rev-parse HEAD^)"
+          fi
+          echo "AEGIS_BASE_SHA=${base}" >> "${GITHUB_ENV}"
+          echo "fast-preflight base=${base} head=$(git rev-parse HEAD)"
+
+      - name: Install canonical workspace
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Fast canonical control-plane gates
+        working-directory: product
+        run: |
+          set -euo pipefail
+          npm run bootstrap:workspace
+          npm run check:ownership
+          npm run check:workstreams
+          npm run check:contracts
+          npm run check:strict-config
+          npm run check:release
+
+      - name: Change-impact contract gate
+        working-directory: product
+        run: node tools/ci-change-impact-check.mjs
+
+      - name: Change-impact unit tests
+        working-directory: product
+        run: node --test tests/ci-change-impact-check.test.mjs

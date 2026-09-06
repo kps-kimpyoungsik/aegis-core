@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "data-plane.postgres-schema-fixtures",
+      "sourcePrefixes": ["data-plane/live-integration/sql/"],
+      "materialDiffPattern": "^[+-].*(CREATE TABLE|ALTER TABLE|DROP TABLE|PRIMARY KEY|UNIQUE|NOT NULL|ADD COLUMN|DROP COLUMN)",
+      "requiredCompanionPaths": [
+        "data-plane/live-integration/scripts/test-postgres-live.sh",
+        "data-plane/live-integration/scripts/test-postgres-recovery-live.sh"
+      ],
+      "reason": "PostgreSQL DDL contract changes must update both live and recovery fixtures in the same candidate."
+    }
+  ]
+}
