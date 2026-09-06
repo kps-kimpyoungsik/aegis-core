@@ -1,0 +1,34 @@
+{
+  "id": "WS-20260906-P4-11A-ASSET-GOVERNANCE",
+  "sessionClass": "governance",
+  "state": "CANDIDATE",
+  "ownerResponsibility": "responsibility",
+  "capabilityIds": ["governance.session-collision-control"],
+  "requestedCapabilityIds": [
+    "asset.canonical-contracts",
+    "asset.multimodal-extraction",
+    "asset.artifact-integrity-lineage"
+  ],
+  "touchPaths": [
+    "product/contracts/ownership-registry.json",
+    "product/contracts/domain-registry.json",
+    "product/contracts/capability-registry.json",
+    "product/contracts/workstreams/WS-20260906-P4-11A-ASSET-GOVERNANCE.json"
+  ],
+  "baselineMainSha": "1bcc05a1b34e0b932dc7c4ceef7bf653672728df",
+  "targetFileStatus": {
+    "ownership-registry.json": "UNCHANGED",
+    "domain-registry.json": "UNCHANGED",
+    "capability-registry.json": "UNCHANGED",
+    "workstream": "NEW_PATH"
+  },
+  "decision": "CREATE_MINIMAL_NEW_GOVERNANCE_BOUNDARY",
+  "constraints": [
+    "Asset semantic ownership must not be assigned to Data Plane storage responsibilities",
+    "Retrieval consumes asset projections but does not own extraction lifecycle",
+    "Vendor model and object-store SDKs remain adapter/plugin concerns",
+    "No production asset package implementation is promoted in this workstream",
+    "P4.9 physical object-storage harness remains separate evaluation work"
+  ],
+  "rollbackPoint": "main@1bcc05a1b34e0b932dc7c4ceef7bf653672728df"
+}
