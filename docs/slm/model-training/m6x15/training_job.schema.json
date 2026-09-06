@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AEGIS M6.x-15 Training Job Envelope",
+  "type": "object",
+  "required": [
+    "job_id",
+    "training_run_id",
+    "run_fingerprint",
+    "epoch",
+    "command_id",
+    "attempt",
+    "max_attempts",
+    "adapter_tool_name",
+    "artifact_root",
+    "state"
+  ],
+  "properties": {
+    "epoch": {"type": "integer", "minimum": 0},
+    "attempt": {"type": "integer", "minimum": 1},
+    "max_attempts": {"type": "integer", "minimum": 1},
+    "adapter_tool_name": {"const": "slm.local_training_adapter"},
+    "state": {"const": "READY_FOR_RUNTIME_HANDOFF"}
+  },
+  "additionalProperties": true
+}
