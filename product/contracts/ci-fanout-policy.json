@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "ownerResponsibility": "release-convergence",
+  "failureFamily": "github-actions|ci-governance|dispatch|workflow-fanout|same-head-sha",
+  "maxHeavyweightGroupsPerSha": 5,
+  "controlGroup": "control-plane",
+  "groupOrder": [
+    "control-plane",
+    "product",
+    "runtime",
+    "data-plane",
+    "storage",
+    "integration",
+    "release"
+  ],
+  "pathRules": [
+    {"prefix": "product/release", "groups": ["product", "release"]},
+    {"prefix": "product", "groups": ["product"]},
+    {"prefix": "runtime-kernel", "groups": ["runtime"]},
+    {"prefix": "data-plane", "groups": ["data-plane"]},
+    {"prefix": "storage-adapters", "groups": ["storage"]},
+    {"prefix": "integration-gate", "groups": ["integration"]},
+    {"prefix": ".github/workflows", "groups": ["release"]}
+  ],
+  "dependencyClosure": {
+    "product": ["release"],
+    "runtime": ["integration"],
+    "data-plane": ["storage", "integration", "release"],
+    "storage": ["integration", "release"],
+    "integration": ["release"],
+    "release": []
+  },
+  "budgetPolicy": "NEVER_DROP_REQUIRED_GROUPS; ON_BUDGET_EXCEEDED_RETURN_SPLIT_OR_ESCALATE",
+  "nonClaims": [
+    "does-not-dispatch-github-actions",
+    "does-not-replace-required-security-or-release-gates",
+    "does-not-authorize-promotion"
+  ]
+}
