@@ -3,7 +3,7 @@
   "sessionClass": "security-release",
   "state": "CANDIDATE",
   "branch": "release/r1.18-data-plane-tenant-isolation-rebase-20260906",
-  "baselineMainSha": "01cde387b1e7a90ddf4bf55c11115256159f89db",
+  "baselineMainSha": "7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d",
   "ownerResponsibility": "storage-runtime",
   "capabilityIds": ["data-plane.tenant-isolation", "data-plane.postgres-rls"],
   "touchPaths": [
@@ -18,5 +18,5 @@
     "Tenant context absence must expose zero tenant rows",
     "Cross-tenant write must be denied by PostgreSQL RLS"
   ],
-  "rollbackPoint": "main@01cde387b1e7a90ddf4bf55c11115256159f89db"
+  "rollbackPoint": "main@7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d"
 }
