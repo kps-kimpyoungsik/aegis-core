@@ -76,13 +76,14 @@ export function auditHandoff(item, evidence) {
 
   const unresolvedExternal = blockers.some((blocker) => blocker.state === 'BLOCKED_EXTERNAL');
   const unresolvedDependency = blockers.some((blocker) => blocker.state !== 'COMPLETED' && blocker.state !== 'CLEARED' && blocker.state !== 'BLOCKED_EXTERNAL');
+  const hasUnresolvedBlocker = unresolvedExternal || unresolvedDependency;
   const retryExhausted = retryCount >= maxRetry;
 
   if (!ownerMatches) {
     return decision(item, 'REHANDOFF_REQUIRED', 'REHANDOFF', false, 'CANONICAL_OWNER_DRIFT');
   }
 
-  if (acceptanceComplete && validationEvidence && !validationFailed && blockers.length === 0) {
+  if (acceptanceComplete && validationEvidence && !validationFailed && !hasUnresolvedBlocker) {
     return decision(item, 'COMPLETED', 'NONE', false, 'ACCEPTANCE_AND_VALIDATION_VERIFIED');
   }
 
