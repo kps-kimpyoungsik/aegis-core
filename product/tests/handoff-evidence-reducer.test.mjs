@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { normalizeGitHubEvidence } from '../tools/handoff-evidence-adapter.mjs';
-import { createAuditEvent, projectRegistry } from '../tools/handoff-state-reducer.mjs';
+import { createAuditEvent, projectRegistry, reduceHandoff } from '../tools/handoff-state-reducer.mjs';
 
 const item = {
   id: 'AEGIS-HANDOFF-TEST-001',
@@ -33,7 +33,7 @@ function options(overrides = {}) {
 test('pre-run GitHub failure is NOT_EXECUTED and not a code validation failure', () => {
   const evidence = normalizeGitHubEvidence(options({
     workflowRuns: [{ id: 10, status: 'completed', conclusion: 'failure' }],
-    jobs: [{ id: 20, conclusion: 'failure', steps: [] }]
+    jobs: [{ id: 20, conclusion: 'failure', steps: null }]
   }));
   assert.equal(evidence.executionStatus, 'NOT_EXECUTED');
   assert.equal(evidence.validationFailed, false);
@@ -58,12 +58,15 @@ test('successful executed validation can become completion evidence', () => {
   }));
   assert.equal(evidence.validationEvidence, true);
   const event = createAuditEvent(item, evidence, '2026-09-06T12:00:00Z');
+  assert.equal(Object.isFrozen(event), true);
   assert.equal(event.state, 'COMPLETED');
   assert.equal(event.evidenceStatus, 'EXECUTED');
 });
 
 test('external blocker stays blocked and is projected from immutable event', () => {
   const evidence = normalizeGitHubEvidence(options({
+    workflowRuns: [{ id: 13, status: 'completed', conclusion: 'failure' }],
+    jobs: [{ id: 23, conclusion: 'failure', steps: [] }],
     blockers: [{ id: 'billing', state: 'BLOCKED_EXTERNAL' }]
   }));
   const event = createAuditEvent(item, evidence, '2026-09-06T12:01:00Z');
@@ -72,6 +75,18 @@ test('external blocker stays blocked and is projected from immutable event', () 
   const projected = projectRegistry({ version: '1', items: [item] }, [event]);
   assert.equal(projected.items[0].state, 'BLOCKED_EXTERNAL');
   assert.equal(projected.items[0].lastAudit.reason, 'EXTERNAL_STATE_UNCHANGED');
+  assert.equal(projected.items[0].lastAudit.evidenceStatus, 'NOT_EXECUTED');
+});
+
+test('dependency blocker projects BLOCKED_DEPENDENCY without mutating baseline', () => {
+  const evidence = normalizeGitHubEvidence(options({
+    blockers: [{ id: 'dependency', state: 'IN_PROGRESS' }]
+  }));
+  const event = createAuditEvent(item, evidence, '2026-09-06T12:02:00Z');
+  const projected = reduceHandoff(item, [event]);
+  assert.equal(item.state, 'IN_PROGRESS');
+  assert.equal(projected.state, 'BLOCKED_DEPENDENCY');
+  assert.equal(projected.lastAudit.action, 'WAIT_DEPENDENCY');
 });
 
 test('state reducer rejects out-of-order audit provenance', () => {
