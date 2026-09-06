@@ -1,0 +1,12 @@
+{
+  "id":"WS-20260906-RELEASE-EVIDENCE-REBASE",
+  "sessionClass":"release-evolution",
+  "state":"ACTIVE_CANDIDATE",
+  "branch":"evolution/release-evidence-rebase-20260906",
+  "baseMainSha":"471439bd2faa167618d158ff9ca5f1b9800cdf60",
+  "ownerResponsibility":"release-convergence",
+  "capabilityIds":["release.manifest-baseline-serialization"],
+  "touchPaths":["product/contracts/workstreams/WS-20260906-RELEASE-EVIDENCE-REBASE.json","product/release/release-manifest.candidate.json"],
+  "decision":"ADAPT_EXISTING_FAIL_CLOSED",
+  "rollbackPoint":"main@471439bd2faa167618d158ff9ca5f1b9800cdf60"
+}
