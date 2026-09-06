@@ -1,0 +1,22 @@
+{
+  "id": "WS-20260906-EDGE-SECURITY-OWNER-RB",
+  "sessionClass": "governance-security",
+  "state": "CANDIDATE",
+  "ownerResponsibility": "edge-security",
+  "capabilityIds": ["security.edge-waf"],
+  "touchPaths": [
+    "product/contracts/ownership-registry.json",
+    "product/contracts/capability-registry.json",
+    "product/contracts/workstreams/WS-20260906-EDGE-SECURITY-OWNER-RB.json",
+    "product/edge-security/"
+  ],
+  "decision": "NEW_OWNER_BOUNDARY_ONLY",
+  "baseline": "main@7bd1efcc87f3b33d49e27a4b6345a844d0ea923c",
+  "supersedes": ["PR#78"],
+  "constraints": [
+    "No API-server ownership transfer",
+    "No release-convergence authority transfer",
+    "No production WAF qualification without external evidence",
+    "No vendor-specific policy in canonical contracts"
+  ]
+}
