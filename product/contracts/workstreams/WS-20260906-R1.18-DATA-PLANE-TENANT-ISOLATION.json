@@ -2,21 +2,34 @@
   "id": "WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION",
   "sessionClass": "security-release",
   "state": "CANDIDATE",
-  "branch": "release/r1.18-data-plane-tenant-isolation-rebase-20260906",
-  "baselineMainSha": "7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d",
+  "branch": "release/r1.18-data-plane-tenant-isolation-v2-20260906",
+  "baselineMainSha": "9d7e6c14360044460fa06aed7dde959f2af435f4",
   "ownerResponsibility": "storage-runtime",
-  "capabilityIds": ["data-plane.tenant-isolation", "data-plane.postgres-rls"],
+  "capabilityIds": ["data.tenant-isolation"],
   "touchPaths": [
     "data-plane/live-integration/sql/002_tenant_isolation.sql",
     "data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh",
-    ".github/workflows/r1.18-data-plane-tenant-isolation.yml"
+    "data-plane/live-integration/scripts/test-postgres-live.sh",
+    "data-plane/live-integration/scripts/test-postgres-recovery-live.sh",
+    ".github/workflows/r1.18-data-plane-tenant-isolation.yml",
+    "product/release/release-manifest.candidate.json"
   ],
-  "decision": "ADAPT_EXISTING_DATA_PLANE_FAIL_CLOSED",
+  "decision": "REUSE_CANONICAL_CAPABILITY_AND_ADAPT_DATA_PLANE_FAIL_CLOSED",
+  "targetFilePreflight": {
+    "workstream": "CHANGED_BY_OTHER_SESSION_RECONCILED",
+    "migration": "NEW_PATH",
+    "tenantIsolationTest": "NEW_PATH",
+    "postgresLiveRegression": "UNCHANGED",
+    "postgresRecoveryRegression": "UNCHANGED",
+    "workflow": "NEW_PATH",
+    "releaseManifest": "CHANGED_BY_OTHER_SESSION_RELOADED"
+  },
   "constraints": [
     "No API authentication or RBAC ownership change",
     "No Root Authority or production approval change",
-    "Tenant context absence must expose zero tenant rows",
-    "Cross-tenant write must be denied by PostgreSQL RLS"
+    "Tenant context absence must expose zero tenant rows for non-bypass runtime role",
+    "Cross-tenant write must be denied by PostgreSQL RLS",
+    "Production application database role must later be qualified as non-superuser and non-BYPASSRLS"
   ],
-  "rollbackPoint": "main@7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d"
+  "rollbackPoint": "main@9d7e6c14360044460fa06aed7dde959f2af435f4"
 }
