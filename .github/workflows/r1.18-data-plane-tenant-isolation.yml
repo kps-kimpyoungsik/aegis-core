@@ -1,0 +1,71 @@
+name: R1.18 Data Plane Tenant Isolation
+
+on:
+  pull_request:
+    paths:
+      - 'data-plane/live-integration/**'
+      - 'product/contracts/workstreams/WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION.json'
+      - '.github/workflows/r1.18-data-plane-tenant-isolation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-tenant-isolation:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: aegis
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis-ci-tenant-isolation
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      AEGIS_POSTGRES_PASSWORD: aegis-ci-tenant-isolation
+      AEGIS_PG_URL: postgresql://aegis:aegis-ci-tenant-isolation@127.0.0.1:54329/aegis
+    steps:
+      - uses: actions/checkout@v7
+      - name: Apply canonical Data Plane schema and tenant isolation migration
+        run: |
+          psql "$AEGIS_PG_URL" -v ON_ERROR_STOP=1 -f data-plane/live-integration/sql/001_init.sql
+          psql "$AEGIS_PG_URL" -v ON_ERROR_STOP=1 -f data-plane/live-integration/sql/002_tenant_isolation.sql
+      - name: Run physical cross-tenant isolation test
+        run: bash data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh
+      - name: Run existing PostgreSQL live regression under explicit legacy tenant
+        run: |
+          sed \
+            -e "s/INSERT INTO aegis_record(dataset_id/INSERT INTO aegis_record(tenant_id,dataset_id/" \
+            -e "s/VALUES ('runtime.execution'/VALUES ('legacy','runtime.execution'/" \
+            -e "s/INSERT INTO aegis_outbox(event_id,dataset_id/INSERT INTO aegis_outbox(event_id,tenant_id,dataset_id/" \
+            -e "s/VALUES ('evt-1','runtime.execution'/VALUES ('evt-1','legacy','runtime.execution'/" \
+            -e "s/INSERT INTO aegis_projection(projection_id/INSERT INTO aegis_projection(tenant_id,projection_id/" \
+            -e "s/VALUES ('execution_status'/VALUES ('legacy','execution_status'/" \
+            data-plane/live-integration/scripts/test-postgres-live.sh > /tmp/test-postgres-live-tenant.sh
+          bash /tmp/test-postgres-live-tenant.sh
+      - name: Record bounded evidence
+        run: |
+          mkdir -p build/r1.18-data-plane-tenant-isolation
+          {
+            printf 'R1_18_DATA_PLANE_TENANT_ISOLATION=PASS\n'
+            printf 'HEAD_SHA=%s\n' "$GITHUB_SHA"
+            printf 'POSTGRES_RLS=EXECUTED_PASS\n'
+            printf 'SAME_RECORD_ID_MULTI_TENANT=EXECUTED_PASS\n'
+            printf 'CROSS_TENANT_WRITE_DENIAL=EXECUTED_PASS\n'
+            printf 'MISSING_TENANT_CONTEXT_FAIL_CLOSED=EXECUTED_PASS\n'
+            printf 'PRODUCTION_DB_QUALIFICATION=NOT_EXECUTED\n'
+            printf 'GA_PROMOTION=NOT_EXECUTED\n'
+          } > build/r1.18-data-plane-tenant-isolation/evidence.txt
+          sha256sum build/r1.18-data-plane-tenant-isolation/evidence.txt > build/r1.18-data-plane-tenant-isolation/evidence.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.18-data-plane-tenant-isolation
+          path: build/r1.18-data-plane-tenant-isolation/**
+          if-no-files-found: error
