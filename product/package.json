@@ -13,6 +13,7 @@
     "check:versions": "node tools/package-version-check.mjs",
     "check:strict-config": "node tools/strict-config-check.mjs",
     "check:release": "node tools/release-manifest-check.mjs",
+    "check:release-evolution": "node tools/release-evolution-preflight.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "typecheck:release": "tsc -p tsconfig.release.json",
     "lint": "eslint .",
