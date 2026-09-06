@@ -23,6 +23,23 @@ No substantive design or implementation begins until the Latest-Main-Before-Work
 
 The intended write set MUST be bounded before mutation: canonical owner, capability, paths, contracts, datasets/events, authority surface, and expected validation gates. If this write set overlaps a newly discovered session or PR, stop and reconcile ownership before editing.
 
+## Pre-Commit Latest-Source Refresh Barrier
+
+Immediately before every commit, repository write that creates a commit, PR promotion, or merge, the session MUST refresh its source view from the latest canonical remote state. Reading only a previously cached HEAD value is insufficient.
+
+The session MUST, using the strongest source-control operation available in its runtime:
+
+1. Fetch or otherwise read the newest remote `main` ref and record the exact SHA.
+2. Refresh/reload the canonical files that intersect the candidate write set from that newest SHA, including ownership/domain/capability/workstream registries and any touched contracts, schemas, tests, release evidence, or source files.
+3. Compare the refreshed canonical source with the candidate baseline and inspect every intervening commit that can affect ownership, behavior, contracts, state, data, authority, dependencies, CI/release evidence, or touched paths.
+4. Rebase, merge, replay, reconstruct, or logically reconcile the candidate onto the newest canonical source; never commit a stale snapshot merely because the local patch still applies.
+5. Rerun collision checks and all affected deterministic, lint/type, test, security, integration, build, and release gates against the refreshed combined source.
+6. Record `preCommitMainSha` and ensure the candidate being committed was validated against that exact refreshed source.
+
+If the runtime cannot fetch/pull/reload the latest remote source, record `PRE_COMMIT_SOURCE_SYNC_NOT_EXECUTED` and fail closed for canonical commit/promotion claims.
+
+If `main` changes again after refresh but before the commit/write is accepted, the previous validation is stale. Repeat this barrier before retrying.
+
 ## Pre-Write / Pre-Commit Revalidation Invariant
 
 Immediately before every repository write, commit, PR promotion, or merge, every session MUST read `main` HEAD again and recheck relevant open PR/workstream overlap.
@@ -64,13 +81,14 @@ A stale candidate may be retained as provenance/reference, but MUST NOT be promo
 Each substantive workstream should record at minimum:
 
 - `baselineMainSha`
+- `preCommitMainSha`
 - latest-main check time or evidence reference
 - intervening commit assessment
 - open PR / active workstream overlap assessment
 - canonical owner/capability decision
 - bounded intended write set / touched canonical paths
 - contract/dataset/event/authority collision result where applicable
-- validation evidence tied to exact candidate head
+- validation evidence tied to exact refreshed candidate head
 - resulting commit SHA when committed
 - post-write latest-main verification
 - rollback point
@@ -78,9 +96,10 @@ Each substantive workstream should record at minimum:
 ## Canonical Invariants Added
 
 - No work from an unchecked stale Git baseline.
+- No commit or promotion from a stale source snapshot when latest remote source can be refreshed.
 - No duplicate implementation when a newer main commit or active canonical workstream already owns the capability.
 - No promotion using validation evidence from a superseded base or moved candidate HEAD.
-- No repository write without a final latest-main and active-work conflict recheck.
+- No repository write without a final latest-main, latest-source, and active-work conflict recheck.
 - No merge without exact-head fencing when the Git surface supports it.
 - No cross-session assumption when Git evidence can resolve it.
 - No overwrite of concurrent work without explicit reconciliation.
@@ -88,8 +107,8 @@ Each substantive workstream should record at minimum:
 
 ## Mandatory Cross-Session Work Loop
 
-`SYNC MAIN -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> SYNC MAIN AGAIN -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
+`SYNC MAIN -> REFRESH LATEST SOURCE -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST SOURCE AGAIN -> RECONCILE/REBASE -> RERUN AFFECTED GATES -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
 
-This loop is mandatory at the start of every continuation/wakeup cycle, not only at the beginning of a conversation.
+This loop is mandatory at the start of every continuation/wakeup cycle and immediately before every commit/promotion, not only at the beginning of a conversation.
 
 These rules supplement, and do not weaken, the existing Constitution, protected surfaces, authority gates, Conflict Guard, release gates, or rollback requirements.
