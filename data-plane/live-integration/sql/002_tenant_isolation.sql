@@ -1,0 +1,78 @@
+BEGIN;
+
+ALTER TABLE aegis_record ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE aegis_outbox ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE aegis_projection ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+
+UPDATE aegis_record SET tenant_id = 'legacy' WHERE tenant_id IS NULL;
+UPDATE aegis_outbox SET tenant_id = 'legacy' WHERE tenant_id IS NULL;
+UPDATE aegis_projection SET tenant_id = 'legacy' WHERE tenant_id IS NULL;
+
+ALTER TABLE aegis_record ALTER COLUMN tenant_id SET DEFAULT 'legacy';
+ALTER TABLE aegis_outbox ALTER COLUMN tenant_id SET DEFAULT 'legacy';
+ALTER TABLE aegis_projection ALTER COLUMN tenant_id SET DEFAULT 'legacy';
+
+ALTER TABLE aegis_record ALTER COLUMN tenant_id SET NOT NULL;
+ALTER TABLE aegis_outbox ALTER COLUMN tenant_id SET NOT NULL;
+ALTER TABLE aegis_projection ALTER COLUMN tenant_id SET NOT NULL;
+
+-- Rebuild primary keys deterministically so fresh and upgraded databases converge.
+ALTER TABLE aegis_record DROP CONSTRAINT IF EXISTS aegis_record_pkey;
+ALTER TABLE aegis_record ADD CONSTRAINT aegis_record_pkey
+  PRIMARY KEY (tenant_id, dataset_id, record_id);
+
+ALTER TABLE aegis_projection DROP CONSTRAINT IF EXISTS aegis_projection_pkey;
+ALTER TABLE aegis_projection ADD CONSTRAINT aegis_projection_pkey
+  PRIMARY KEY (tenant_id, projection_id, entity_id);
+
+-- Remove only legacy/equivalent outbox UNIQUE constraints, then install one canonical constraint.
+ALTER TABLE aegis_outbox DROP CONSTRAINT IF EXISTS aegis_outbox_dataset_id_record_id_record_version_event_type_key;
+ALTER TABLE aegis_outbox DROP CONSTRAINT IF EXISTS aegis_outbox_tenant_record_version_event_unique;
+
+DO $$
+DECLARE duplicate_name text;
+BEGIN
+  FOR duplicate_name IN
+    SELECT c.conname
+    FROM pg_constraint c
+    WHERE c.conrelid = 'aegis_outbox'::regclass
+      AND c.contype = 'u'
+      AND ARRAY(
+        SELECT a.attname
+        FROM unnest(c.conkey) WITH ORDINALITY AS keycol(attnum, ord)
+        JOIN pg_attribute a
+          ON a.attrelid = c.conrelid
+         AND a.attnum = keycol.attnum
+        ORDER BY keycol.ord
+      ) = ARRAY['tenant_id','dataset_id','record_id','record_version','event_type']::name[]
+  LOOP
+    EXECUTE format('ALTER TABLE aegis_outbox DROP CONSTRAINT %I', duplicate_name);
+  END LOOP;
+END $$;
+
+ALTER TABLE aegis_outbox ADD CONSTRAINT aegis_outbox_tenant_record_version_event_unique
+  UNIQUE (tenant_id, dataset_id, record_id, record_version, event_type);
+
+ALTER TABLE aegis_record ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aegis_record FORCE ROW LEVEL SECURITY;
+ALTER TABLE aegis_outbox ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aegis_outbox FORCE ROW LEVEL SECURITY;
+ALTER TABLE aegis_projection ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aegis_projection FORCE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS aegis_record_tenant_isolation ON aegis_record;
+CREATE POLICY aegis_record_tenant_isolation ON aegis_record
+  USING (tenant_id = current_setting('aegis.tenant_id', true))
+  WITH CHECK (tenant_id = current_setting('aegis.tenant_id', true));
+
+DROP POLICY IF EXISTS aegis_outbox_tenant_isolation ON aegis_outbox;
+CREATE POLICY aegis_outbox_tenant_isolation ON aegis_outbox
+  USING (tenant_id = current_setting('aegis.tenant_id', true))
+  WITH CHECK (tenant_id = current_setting('aegis.tenant_id', true));
+
+DROP POLICY IF EXISTS aegis_projection_tenant_isolation ON aegis_projection;
+CREATE POLICY aegis_projection_tenant_isolation ON aegis_projection
+  USING (tenant_id = current_setting('aegis.tenant_id', true))
+  WITH CHECK (tenant_id = current_setting('aegis.tenant_id', true));
+
+COMMIT;

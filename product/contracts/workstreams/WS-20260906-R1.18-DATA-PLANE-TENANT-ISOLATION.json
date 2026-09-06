@@ -2,21 +2,46 @@
   "id": "WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION",
   "sessionClass": "security-release",
   "state": "CANDIDATE",
-  "branch": "release/r1.18-data-plane-tenant-isolation-rebase-20260906",
-  "baselineMainSha": "7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d",
+  "branch": "release/r1.18-tenant-isolation-v3-20260906",
+  "baselineMainSha": "12a4baec9f501a96c9087e37e24da899447ba23a",
   "ownerResponsibility": "storage-runtime",
   "capabilityIds": ["data.tenant-isolation"],
   "touchPaths": [
     "data-plane/live-integration/sql/002_tenant_isolation.sql",
+    "data-plane/live-integration/scripts/run-postgres-migrations.sh",
     "data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh",
+    "data-plane/live-integration/scripts/test-postgres-live.sh",
+    ".github/workflows/p4-live-storage-integration.yml",
+    ".github/workflows/p4-recovery-live.yml",
     ".github/workflows/r1.18-data-plane-tenant-isolation.yml"
   ],
-  "decision": "ADAPT_EXISTING_DATA_PLANE_FAIL_CLOSED",
+  "decision": "REUSE_CANONICAL_STORAGE_OWNER_AND_FIX_STATIC_SCHEMA_CONSUMER_DRIFT",
+  "targetFilePreflight": {
+    "migration": "NEW_PATH",
+    "migrationRunner": "NEW_PATH",
+    "tenantIsolationTest": "NEW_PATH",
+    "postgresLiveRegression": "CHANGED_BY_THIS_CANDIDATE_AFTER_STATIC_RCA",
+    "liveStorageWorkflow": "CHANGED_BY_THIS_CANDIDATE",
+    "recoveryWorkflow": "CHANGED_BY_THIS_CANDIDATE",
+    "tenantIsolationWorkflow": "NEW_PATH",
+    "latestMainDelta": "AGENTS_AND_HANDOFF_GUIDE_ONLY_NO_DATA_PLANE_TARGET_OVERLAP"
+  },
+  "failurePreflight": {
+    "githubActionsAdmission": "BLOCKED_EXTERNAL_ISSUE_114",
+    "schemaConsumerKeyMismatch": "CORRECTED_PENDING_EXECUTION",
+    "duplicateConstraintDrift": "CORRECTED_PENDING_EXECUTION"
+  },
   "constraints": [
     "No API authentication or RBAC ownership change",
     "No Root Authority or production approval change",
-    "Tenant context absence must expose zero tenant rows",
-    "Cross-tenant write must be denied by PostgreSQL RLS"
+    "No duplicate schema-application logic across PostgreSQL workflows",
+    "Tenant context absence must expose zero tenant rows for non-bypass runtime roles",
+    "Cross-tenant writes must be denied by PostgreSQL RLS",
+    "Existing legacy tests retain legacy tenant compatibility through migration defaults",
+    "Fresh and upgraded databases must converge to one tenant-aware primary/unique constraint set",
+    "CI PostgreSQL server and client major versions must remain compatible",
+    "Every continuation must classify same-workstream Git failures before unrelated work",
+    "Every commit must refresh latest main and exact target-file status immediately before creation"
   ],
-  "rollbackPoint": "main@7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d"
+  "rollbackPoint": "main@12a4baec9f501a96c9087e37e24da899447ba23a"
 }
