@@ -19,6 +19,7 @@ jobs:
       AEGIS_CI_PRINCIPAL_ID: principal:r1.7-load-soak
       AEGIS_CI_TENANT_ID: tenant:r1.7-load-soak
       AEGIS_CI_ROLES: RUNTIME_VIEWER
+      AEGIS_CI_RATE_LIMIT_PER_MINUTE: '1000000'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -55,6 +56,7 @@ jobs:
             --env AEGIS_API_PRINCIPAL_ID="${AEGIS_CI_PRINCIPAL_ID}" \
             --env AEGIS_API_TENANT_ID="${AEGIS_CI_TENANT_ID}" \
             --env AEGIS_API_ROLES="${AEGIS_CI_ROLES}" \
+            --env AEGIS_API_RATE_LIMIT_PER_MINUTE="${AEGIS_CI_RATE_LIMIT_PER_MINUTE}" \
             aegis-product:r1.7-candidate \
             | tee build/r1.7-load-soak/container-id.txt
           for attempt in $(seq 1 60); do
@@ -205,6 +207,8 @@ jobs:
             echo 'authentication_adapter=CI_BOOTSTRAP_BEARER'
             echo 'tenant_binding=REQUIRED'
             echo 'authentication_secret_class=SYNTHETIC_NON_PRODUCTION'
+            echo 'rate_limit_profile=SYNTHETIC_HIGH_CEILING_FOR_RELIABILITY_ONLY'
+            echo "rate_limit_per_minute=${AEGIS_CI_RATE_LIMIT_PER_MINUTE}"
             echo 'latency_slo_qualification=NOT_CLAIMED'
             echo 'production_capacity_qualification=NOT_CLAIMED'
             echo 'production_oidc_jwks=NOT_EXECUTED'
