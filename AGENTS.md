@@ -23,6 +23,20 @@ No substantive design or implementation begins until the Latest-Main-Before-Work
 
 The intended write set MUST be bounded before mutation: canonical owner, capability, paths, contracts, datasets/events, authority surface, and expected validation gates. If this write set overlaps a newly discovered session or PR, stop and reconcile ownership before editing.
 
+## Session-Error-First Continuation Invariant
+
+Every continuation, wakeup, resumed implementation cycle, or follow-up request MUST inspect the current session's own Git evidence before starting new design or implementation work.
+
+At minimum, the session MUST inspect its previously created or modified branches, commits, pull requests, workflow/check results, review findings, and recorded failure evidence that remain relevant to the active workstream. It MUST classify each unresolved result as `PASS`, `FAIL`, `IN_PROGRESS`, `BLOCKED_BY_ENVIRONMENT`, `SUPERSEDED`, or `NOT_EXECUTED`.
+
+If a current-session PR or exact candidate head is failing, the session MUST inspect the concrete failure evidence before adding new code. A generic failure label or exit code is not a causal diagnosis. When executable logs exist, identify the smallest supported Failure Signature and correct only that mechanism. When jobs fail before executable steps or logs are unavailable, record `BLOCKED_BY_ENVIRONMENT` or the most precise evidence-supported status and do not speculate or mutate implementation code merely to make the red status disappear.
+
+A session MUST resolve, supersede, or explicitly carry forward its own unresolved Git failures before opening a duplicate successor for the same capability. Historical failed candidates remain provenance and MUST NOT be reused as PASS evidence.
+
+The mandatory continuation order is:
+
+`SESSION GIT ERRORS -> LATEST MAIN -> TARGET FILE STATUS -> PR/WORKSTREAM OVERLAP -> REUSE/ADAPT/HANDOFF -> MINIMAL CHANGE -> PRE-COMMIT LATEST MAIN -> EXACT-HEAD VERIFY`
+
 ## Target-File Git Status Preflight Invariant
 
 Before editing any implementation/design file, every session MUST inspect the Git state of the exact target files/directories it intends to touch.
@@ -93,6 +107,7 @@ Each substantive workstream should record at minimum:
 - target-file Git status / revision evidence
 - intervening commit assessment
 - open PR / active workstream overlap assessment
+- current-session unresolved Git error/failure assessment
 - canonical owner/capability decision
 - bounded intended write set / touched canonical paths
 - contract/dataset/event/authority collision result where applicable
@@ -105,6 +120,8 @@ Each substantive workstream should record at minimum:
 ## Canonical Invariants Added
 
 - No work from an unchecked stale Git baseline.
+- No continuation before current-session Git failures are inspected and classified.
+- No speculative code mutation when a failure occurred before executable CI steps or lacks causal evidence.
 - No target-file mutation before exact Git target status/revision inspection.
 - No duplicate implementation when a newer main commit or active canonical workstream already owns the capability.
 - No promotion using validation evidence from a superseded base or moved candidate HEAD.
@@ -119,7 +136,7 @@ Each substantive workstream should record at minimum:
 
 ## Mandatory Cross-Session Work Loop
 
-`SYNC MAIN -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
+`SESSION ERROR PREFLIGHT -> SYNC MAIN -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
 
 This loop is mandatory at the start of every continuation/wakeup cycle, not only at the beginning of a conversation.
 
