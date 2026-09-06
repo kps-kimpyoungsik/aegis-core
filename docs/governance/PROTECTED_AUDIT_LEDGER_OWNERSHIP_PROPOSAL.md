@@ -164,6 +164,26 @@ Before any durable adapter is implemented, the canonical contract MUST define at
 - verifier-readable evidence contract;
 - explicit failure signatures and fail-closed behavior.
 
+## Canonical serialization requirement
+
+Current `RuntimeTraceAuditKernel.envelope()` constructs hash input by concatenating runtime object string representations for `event.attributes()` and `event.sources()`. That is sufficient only as an internal runtime behavior; it is not an approved durable-ledger serialization contract.
+
+Before any durable Audit Ledger implementation or cross-process verification is promoted, governance MUST define an explicit canonical byte/string representation independent of incidental container/object formatting.
+
+Required verification assets:
+
+- fixed canonical serialization specification;
+- stable field ordering and escaping rules;
+- deterministic encoding/version marker;
+- equivalent attribute maps inserted in different orders -> identical canonical bytes/hash;
+- equivalent source lists -> identical canonical bytes/hash only when canonical order semantics say they are equivalent;
+- changed semantic value -> changed hash;
+- cross-process/restart repeatability;
+- cross-version compatibility or explicit version transition behavior;
+- published non-secret golden test vectors usable by Runtime, persistence adapter, recovery, and Independent Verifier.
+
+No durable ledger should treat the current object `toString()`-derived hash input as a permanent interoperability contract by implication.
+
 ## Handoff audit persistence implication
 
 PR #121 `HANDOFF_AUDITED` events MUST remain candidate/ephemeral projection evidence until this ownership boundary is approved.
@@ -187,6 +207,7 @@ Fail-closed default if no decision is recorded: option 3.
 - [ ] runtime emission and durable ledger semantics remain separated;
 - [ ] physical adapter ownership cannot mutate policy/signing/retention semantics;
 - [ ] session FileDB remains operational/private state and is not treated as the protected ledger;
+- [ ] canonical serialization + versioning + golden hash vectors are approved before durable persistence/interoperability;
 - [ ] independent verifier remains mutation-independent;
 - [ ] duplicate Audit Ledger/store search is clean;
 - [ ] exact-head deterministic and held-out regression tests execute;
