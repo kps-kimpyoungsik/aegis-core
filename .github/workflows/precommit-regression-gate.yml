@@ -1,0 +1,35 @@
+name: precommit-regression-gate
+
+on:
+  pull_request:
+    paths:
+      - 'product/**'
+      - 'runtime-kernel/**'
+      - 'data-plane/**'
+      - 'storage-adapters/**'
+      - 'integration-gate/**'
+      - 'scripts/precommit-verify.sh'
+      - '.github/workflows/precommit-regression-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  precommit-regression:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Refresh canonical main and run impact-aware pre-commit gate
+        env:
+          AEGIS_PRECOMMIT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash scripts/precommit-verify.sh
