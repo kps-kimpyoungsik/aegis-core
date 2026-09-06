@@ -2,21 +2,35 @@
   "id": "WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION",
   "sessionClass": "security-release",
   "state": "CANDIDATE",
-  "branch": "release/r1.18-data-plane-tenant-isolation-rebase-20260906",
-  "baselineMainSha": "7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d",
+  "branch": "release/r1.18-tenant-isolation-v3-20260906",
+  "baselineMainSha": "f65d9fccdd4aeefefa2537868ec9ffb309b0272a",
   "ownerResponsibility": "storage-runtime",
   "capabilityIds": ["data.tenant-isolation"],
   "touchPaths": [
     "data-plane/live-integration/sql/002_tenant_isolation.sql",
+    "data-plane/live-integration/scripts/run-postgres-migrations.sh",
     "data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh",
+    ".github/workflows/p4-live-storage-integration.yml",
+    ".github/workflows/p4-recovery-live.yml",
     ".github/workflows/r1.18-data-plane-tenant-isolation.yml"
   ],
-  "decision": "ADAPT_EXISTING_DATA_PLANE_FAIL_CLOSED",
+  "decision": "REUSE_CANONICAL_STORAGE_OWNER_AND_CENTRALIZE_MIGRATIONS",
+  "targetFilePreflight": {
+    "migration": "NEW_PATH",
+    "migrationRunner": "NEW_PATH",
+    "tenantIsolationTest": "NEW_PATH",
+    "liveStorageWorkflow": "CHANGED_BY_THIS_CANDIDATE",
+    "recoveryWorkflow": "CHANGED_BY_THIS_CANDIDATE",
+    "tenantIsolationWorkflow": "NEW_PATH"
+  },
   "constraints": [
     "No API authentication or RBAC ownership change",
     "No Root Authority or production approval change",
-    "Tenant context absence must expose zero tenant rows",
-    "Cross-tenant write must be denied by PostgreSQL RLS"
+    "No duplicate schema-application logic across PostgreSQL workflows",
+    "Tenant context absence must expose zero tenant rows for non-bypass runtime roles",
+    "Cross-tenant writes must be denied by PostgreSQL RLS",
+    "Existing legacy tests retain legacy tenant compatibility through migration defaults",
+    "CI PostgreSQL server and client major versions must remain compatible"
   ],
-  "rollbackPoint": "main@7ef28ff54c3c0a14b3ba585f5d92f965b3ef034d"
+  "rollbackPoint": "main@f65d9fccdd4aeefefa2537868ec9ffb309b0272a"
 }
