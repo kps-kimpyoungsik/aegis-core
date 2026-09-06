@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Immutable Dataset Snapshot",
+  "type": "object",
+  "required": [
+    "dataset_snapshot_id",
+    "snapshot_seed",
+    "split_policy_revision",
+    "split_assignments",
+    "contamination_report",
+    "snapshot_fingerprint",
+    "state"
+  ],
+  "properties": {
+    "dataset_snapshot_id": {"type": "string"},
+    "state": {"const": "SEALED_NOT_TRAINED"}
+  }
+}
