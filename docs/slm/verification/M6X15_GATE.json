@@ -1,0 +1,20 @@
+{
+  "gate": "M6X15_LOCAL_TRAINING_ADAPTER_RESUME_SAFE_JOB_ORCHESTRATION",
+  "status": "PASS_BY_REFERENCE_FIXTURE",
+  "checks": {
+    "runtime_dispatch_handoff": true,
+    "resource_control_handoff": true,
+    "recovery_replay_handoff": true,
+    "exact_resume_identity": true,
+    "bounded_retry": true,
+    "oom_config_change_requires_new_run": true,
+    "stale_heartbeat_no_self_retry": true,
+    "deterministic_completion_receipt": true,
+    "evaluation_trigger_ready_not_evaluated": true,
+    "no_scheduler_duplication": true,
+    "no_resource_lock_duplication": true,
+    "no_auto_promotion": true
+  },
+  "actual_long_running_gpu_training_executed": false,
+  "actual_model_promotion_executed": false
+}

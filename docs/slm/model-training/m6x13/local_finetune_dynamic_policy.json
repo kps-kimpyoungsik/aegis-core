@@ -1,0 +1,33 @@
+{
+  "policy_revision": "M6X13-P1",
+  "training_method": "SFT_QLORA",
+  "quantization": {
+    "bits": 4,
+    "quant_type": "NF4",
+    "double_quant": true,
+    "compute_dtype": "BF16_IF_SUPPORTED"
+  },
+  "lora": {
+    "rank": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules_policy": "MODEL_FAMILY_ADAPTER"
+  },
+  "training": {
+    "gradient_checkpointing": true,
+    "seed": 42,
+    "data_seed": 42,
+    "max_seq_length_by_profile": {
+      "PROFILE_LOCAL_16GB": 2048,
+      "PROFILE_LOCAL_24GB": 4096
+    }
+  },
+  "dynamic_material": {
+    "max_new_candidates_per_cycle": 200,
+    "min_correctness": 0.95,
+    "min_grounding": 0.90,
+    "protected_eval_raw_access": false,
+    "auto_golden": false,
+    "sealed_snapshot_mutation": false
+  }
+}

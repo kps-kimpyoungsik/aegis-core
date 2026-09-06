@@ -1,0 +1,23 @@
+{
+  "policy_revision": "M6X16-P1",
+  "adapter": "TRL_PEFT_QLORA",
+  "require_exact_model_revision": true,
+  "require_exact_tokenizer_revision": true,
+  "quantization": {
+    "load_in_4bit": true,
+    "bnb_4bit_quant_type": "nf4",
+    "bnb_4bit_use_double_quant": true,
+    "compute_dtype": "BF16_IF_SUPPORTED"
+  },
+  "training": {
+    "gradient_checkpointing": true,
+    "resume_requires_exact_checkpoint_path": true,
+    "signal_handler_checkpoint_io": false
+  },
+  "artifacts": {
+    "required_any": ["adapter_model.safetensors", "adapter_model.bin"],
+    "required": ["adapter_config.json"]
+  },
+  "protected_eval_raw_access": false,
+  "auto_promotion": false
+}

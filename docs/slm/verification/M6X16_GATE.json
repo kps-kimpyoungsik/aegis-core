@@ -1,0 +1,19 @@
+{
+  "gate": "M6X_16_ACTUAL_LOCAL_TRAINING_ADAPTER_TRL_PEFT_BRIDGE",
+  "status": "PASS_BY_REFERENCE_FIXTURE_NOT_GPU_EXECUTED",
+  "checks": {
+    "exact_model_revision_required": true,
+    "exact_tokenizer_revision_required": true,
+    "qlora_nf4_translation": true,
+    "resume_exact_checkpoint_path": true,
+    "signal_handler_no_checkpoint_io": true,
+    "safe_callback_requests_save_and_stop": true,
+    "adapter_artifact_hashing": true,
+    "completion_receipt_idempotent": true,
+    "runtime_kernel_ownership_preserved": true,
+    "protected_eval_raw_access": false,
+    "auto_promotion": false
+  },
+  "actual_long_running_gpu_training_executed": false,
+  "actual_model_promotion_executed": false
+}

@@ -1,0 +1,16 @@
+{
+  "gate": "M6X_12_IMMUTABLE_DATASET_SNAPSHOT_SPLIT_ASSIGNMENT",
+  "status": "PASS",
+  "checks": {
+    "snapshot_sealed": true,
+    "same_source_same_split": true,
+    "protected_eval_excluded": true,
+    "non_active_golden_excluded": true,
+    "cross_split_group_zero": true,
+    "protected_overlap_zero": true,
+    "deterministic_snapshot_fingerprint": true,
+    "runner_handoff_ready": true,
+    "no_training": true
+  },
+  "actual_training_executed": false
+}
