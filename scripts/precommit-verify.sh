@@ -69,8 +69,17 @@ for path in "${CHANGED_PATHS[@]}"; do
   fi
 done
 
+# Repository-wide anti-duplication gate. Reuse the canonical product tools instead
+# of creating parallel duplicate/ownership implementations for non-product changes.
+require_command node
+(
+  cd product
+  node tools/ownership-check.mjs
+  node tools/workstream-collision-check.mjs
+  node tools/duplicate-check.mjs
+)
+
 if $GATE_SELF_CHANGED || matches_any_prefix product; then
-  require_command node
   require_command npm
   (
     cd product
