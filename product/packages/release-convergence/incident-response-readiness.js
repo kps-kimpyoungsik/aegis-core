@@ -9,6 +9,7 @@ const RequiredIncidentResponseFields = Object.freeze([
   "exerciseEvidenceRef",
 ]);
 
+/** @param {unknown} value */
 function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
