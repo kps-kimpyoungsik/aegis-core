@@ -7,6 +7,8 @@ const MAX_JSON_BODY_BYTES = 64 * 1024;
 const MIN_BEARER_TOKEN_BYTES = 32;
 const TASK_EXECUTOR_ROLE = "TASK_EXECUTOR";
 const RUNTIME_VIEWER_ROLE = "RUNTIME_VIEWER";
+const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
+const DEFAULT_RATE_LIMIT_MAX_KEYS = 10_000;
 
 class ApiInputError extends Error {
   constructor(status, code) {
@@ -23,6 +25,16 @@ class ApiAuthorizationError extends Error {
     this.name = "ApiAuthorizationError";
     this.status = status;
     this.code = code;
+  }
+}
+
+class ApiRateLimitError extends Error {
+  constructor(retryAfterSeconds) {
+    super("AEGIS-API-016 RATE_LIMITED");
+    this.name = "ApiRateLimitError";
+    this.status = 429;
+    this.code = "AEGIS-API-016 RATE_LIMITED";
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -74,6 +86,47 @@ function validatePrincipal(principal) {
 function parseRoles(value) {
   if (typeof value !== "string") return [];
   return [...new Set(value.split(",").map((role) => role.trim()).filter(Boolean))];
+}
+
+function parsePositiveInteger(value, fallback, code) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(code);
+  return parsed;
+}
+
+export function createFixedWindowRateLimiter({ limit = DEFAULT_RATE_LIMIT_PER_MINUTE, windowMs = 60_000, maxKeys = DEFAULT_RATE_LIMIT_MAX_KEYS, now = () => Date.now() } = {}) {
+  if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error("AEGIS-API-017 INVALID_RATE_LIMIT");
+  if (!Number.isSafeInteger(windowMs) || windowMs <= 0) throw new Error("AEGIS-API-018 INVALID_RATE_WINDOW");
+  if (!Number.isSafeInteger(maxKeys) || maxKeys <= 0) throw new Error("AEGIS-API-019 INVALID_RATE_KEY_CAPACITY");
+  const buckets = new Map();
+  return async ({ principal, method, url }) => {
+    const currentWindow = Math.floor(now() / windowMs);
+    const key = `${principal.tenantId}\u0000${principal.id}\u0000${method}\u0000${url}`;
+    let bucket = buckets.get(key);
+    if (!bucket || bucket.window !== currentWindow) {
+      if (!bucket && buckets.size >= maxKeys) {
+        return { allowed:false, retryAfterSeconds:Math.max(1, Math.ceil(windowMs / 1000)) };
+      }
+      bucket = { window:currentWindow, count:0 };
+      buckets.set(key, bucket);
+    }
+    if (bucket.count >= limit) {
+      const elapsed = now() % windowMs;
+      return { allowed:false, retryAfterSeconds:Math.max(1, Math.ceil((windowMs - elapsed) / 1000)) };
+    }
+    bucket.count += 1;
+    return { allowed:true, remaining:limit - bucket.count };
+  };
+}
+
+export function createEnvironmentRateLimiter(env = process.env, options = {}) {
+  return createFixedWindowRateLimiter({
+    limit: parsePositiveInteger(env.AEGIS_API_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMIT_PER_MINUTE, "AEGIS-API-017 INVALID_RATE_LIMIT"),
+    maxKeys: parsePositiveInteger(env.AEGIS_API_RATE_LIMIT_MAX_KEYS, DEFAULT_RATE_LIMIT_MAX_KEYS, "AEGIS-API-019 INVALID_RATE_KEY_CAPACITY"),
+    windowMs: 60_000,
+    now: options.now,
+  });
 }
 
 export function createEnvironmentAuthenticator(env = process.env) {
@@ -129,19 +182,27 @@ async function requirePrincipal(req, authenticateRequest, allowedRoles) {
   return principal;
 }
 
-export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID(), authenticateRequest = async () => null } = {}) {
+async function enforceRateLimit(req, principal, rateLimitRequest) {
+  const decision = await rateLimitRequest({ principal, method:req.method, url:req.url });
+  if (!decision || decision.allowed !== true) throw new ApiRateLimitError(decision?.retryAfterSeconds ?? 60);
+}
+
+export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID(), authenticateRequest = async () => null, rateLimitRequest = async () => ({ allowed:true }) } = {}) {
   if (typeof executeTask !== "function") throw new Error("AEGIS-API-001 EXECUTE_TASK_REQUIRED");
   if (typeof authenticateRequest !== "function") throw new Error("AEGIS-API-008 AUTHENTICATOR_REQUIRED");
+  if (typeof rateLimitRequest !== "function") throw new Error("AEGIS-API-020 RATE_LIMITER_REQUIRED");
   return http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/health/live") return json(res, 200, { status: "HEALTHY" });
       if (req.method === "GET" && req.url === "/health/ready") return json(res, 200, { status: "READY", contracts: "0.7.0" });
       if (req.method === "GET" && req.url === "/v1/runtime/snapshot") {
-        await requirePrincipal(req, authenticateRequest, [RUNTIME_VIEWER_ROLE, TASK_EXECUTOR_ROLE]);
+        const principal = await requirePrincipal(req, authenticateRequest, [RUNTIME_VIEWER_ROLE, TASK_EXECUTOR_ROLE]);
+        await enforceRateLimit(req, principal, rateLimitRequest);
         return json(res, 200, getSnapshot());
       }
       if (req.method === "POST" && req.url === "/v1/tasks") {
         const principal = await requirePrincipal(req, authenticateRequest, [TASK_EXECUTOR_ROLE]);
+        await enforceRateLimit(req, principal, rateLimitRequest);
         const body = await readJson(req);
         if (!body.goal || !body.owner || !body.responsibility) return json(res, 400, { code: "AEGIS-API-002 INVALID_TASK_COMMAND" });
         const task = createTask({ id: body.id ?? idFactory(), goal: body.goal, owner: body.owner });
@@ -152,12 +213,17 @@ export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [],
     } catch (error) {
       if (error instanceof ApiInputError) return json(res, error.status, { code: error.code });
       if (error instanceof ApiAuthorizationError) return json(res, error.status, { code: error.code }, error.status === 401 ? { "www-authenticate": "Bearer" } : {});
+      if (error instanceof ApiRateLimitError) return json(res, error.status, { code:error.code }, { "retry-after":String(error.retryAfterSeconds) });
       return json(res, 500, { code: "AEGIS-API-500 INTERNAL_ERROR" });
     }
   });
 }
 
-const defaultServer = createApiServer({ executeTask: async ({ task }) => ({ status: "ACCEPTED", task }), authenticateRequest: createConfiguredAuthenticator() });
+const defaultServer = createApiServer({
+  executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
+  authenticateRequest: createConfiguredAuthenticator(),
+  rateLimitRequest: createEnvironmentRateLimiter(),
+});
 const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
 if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
 export { defaultServer as server };
