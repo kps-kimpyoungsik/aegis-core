@@ -1,11 +1,14 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "capabilities": [
     {"id":"governance.session-collision-control","domain":"governance","ownerResponsibility":"responsibility","canonicalPaths":["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/workstreams/","product/tools/workstream-collision-check.mjs"],"status":"ACTIVE"},
     {"id":"runtime.task-lifecycle","domain":"runtime-execution","ownerResponsibility":"application-runtime","canonicalPaths":["runtime-kernel/","product/packages/application-runtime/"],"status":"ACTIVE"},
     {"id":"runtime.harness-execution","domain":"runtime-execution","ownerResponsibility":"harness-runtime","canonicalPaths":["runtime-kernel/","product/packages/harness-runtime/"],"status":"ACTIVE"},
     {"id":"brain.memory-lifecycle","domain":"portable-brain","ownerResponsibility":"memory-runtime","canonicalPaths":["portable-brain/","product/packages/memory-runtime/"],"status":"ACTIVE"},
     {"id":"brain.knowledge-retrieval","domain":"portable-brain","ownerResponsibility":"retrieval-runtime","canonicalPaths":["portable-brain/","product/packages/retrieval-runtime/"],"status":"ACTIVE"},
+    {"id":"asset.canonical-contracts","domain":"asset-intelligence","ownerResponsibility":"asset-contracts","canonicalPaths":["product/packages/asset-contracts/"],"status":"PLANNED"},
+    {"id":"asset.multimodal-extraction","domain":"asset-intelligence","ownerResponsibility":"asset-runtime","canonicalPaths":["product/packages/asset-runtime/"],"status":"PLANNED"},
+    {"id":"asset.artifact-integrity-lineage","domain":"asset-intelligence","ownerResponsibility":"asset-runtime","canonicalPaths":["product/packages/asset-runtime/"],"status":"PLANNED"},
     {"id":"data.storage-contracts","domain":"data-plane","ownerResponsibility":"storage-contracts","canonicalPaths":["data-plane/","product/packages/storage-contracts/"],"status":"ACTIVE"},
     {"id":"data.atomic-idempotency-fencing","domain":"data-plane","ownerResponsibility":"storage-runtime","canonicalPaths":["data-plane/","storage-adapters/","product/packages/storage-runtime/"],"status":"ACTIVE"},
     {"id":"data.tenant-isolation","domain":"data-plane","ownerResponsibility":"storage-runtime","canonicalPaths":["data-plane/","storage-adapters/","product/packages/storage-runtime/"],"status":"PLANNED"},
