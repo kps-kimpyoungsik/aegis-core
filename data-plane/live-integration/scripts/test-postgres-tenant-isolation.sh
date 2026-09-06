@@ -65,6 +65,7 @@ BEGIN
 END $$;
 
 RESET ROLE;
+REVOKE ALL PRIVILEGES ON aegis_record, aegis_outbox, aegis_projection FROM aegis_tenant_runtime;
 DROP ROLE aegis_tenant_runtime;
 SQL
 
