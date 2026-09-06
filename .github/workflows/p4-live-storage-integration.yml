@@ -58,12 +58,14 @@ jobs:
       - name: Verify P4 core regressions
         run: bash data-plane/verify.sh
 
-      - name: Initialize PostgreSQL schema
+      - name: Apply PostgreSQL migrations
         env:
-          PGPASSWORD: aegis-ci
-        run: |
-          psql -h 127.0.0.1 -p 54329 -U aegis -d aegis -v ON_ERROR_STOP=1 \
-            -f data-plane/live-integration/sql/001_init.sql
+          AEGIS_POSTGRES_PASSWORD: aegis-ci
+          AEGIS_PG_HOST: 127.0.0.1
+          AEGIS_PG_PORT: "54329"
+          AEGIS_PG_DB: aegis
+          AEGIS_PG_USER: aegis
+        run: bash data-plane/live-integration/scripts/run-postgres-migrations.sh
 
       - name: PostgreSQL live storage contract
         env:
@@ -93,7 +95,8 @@ jobs:
           } | tee data-plane/build/live-evidence/environment.txt
           pg_isready -h 127.0.0.1 -p 54329 -U aegis | tee data-plane/build/live-evidence/postgres-health.txt
           redis-cli -h 127.0.0.1 -p 56379 ping | tee data-plane/build/live-evidence/redis-health.txt
-          sha256sum data-plane/live-integration/sql/001_init.sql \
+          sha256sum data-plane/live-integration/sql/*.sql \
+            data-plane/live-integration/scripts/run-postgres-migrations.sh \
             data-plane/live-integration/scripts/test-postgres-live.sh \
             data-plane/live-integration/scripts/test-redis-live.sh \
             > data-plane/build/live-evidence/source-sha256.txt
