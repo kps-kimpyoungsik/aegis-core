@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Training Run Manifest",
+  "type": "object",
+  "required": [
+    "training_run_id",
+    "dataset_snapshot_fingerprint",
+    "model_fingerprint",
+    "tokenizer_fingerprint",
+    "training_config_hash",
+    "environment_fingerprint",
+    "state"
+  ],
+  "properties": {
+    "state": {"const": "READY_NOT_STARTED"}
+  }
+}
