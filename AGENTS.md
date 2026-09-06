@@ -23,6 +23,20 @@ No substantive design or implementation begins until the Latest-Main-Before-Work
 
 The intended write set MUST be bounded before mutation: canonical owner, capability, paths, contracts, datasets/events, authority surface, and expected validation gates. If this write set overlaps a newly discovered session or PR, stop and reconcile ownership before editing.
 
+## Session Error Preflight Invariant
+
+Every continuation, wake-up, resumed workstream, or `continue` execution MUST inspect the current Git evidence for errors produced by the same session/workstream before selecting the next task.
+
+At minimum, inspect the session/workstream's own recent branches, commits, pull requests, workflow runs, review comments, handoff issues, superseded candidates, and exact-head validation results. Classify unresolved findings as one or more of: `ACTIVE_FAILURE`, `STALE_BASE`, `SUPERSEDED`, `OWNER_HANDOFF`, `DEPENDENCY_IMPACT_DRIFT`, `REGRESSION`, `UNKNOWN`, or `CLEARED`.
+
+A session MUST NOT continue from the last conversational plan when its Git evidence contains an unresolved failure or newer corrective commit. The unresolved failure mechanism must be diagnosed and either corrected, handed off to its canonical owner, superseded, or explicitly fail-closed before unrelated implementation continues.
+
+Generic CI symptoms such as `Process completed with exit code 1` are not root-cause classifications. The session must inspect the failing workflow/job/step/log and record the concrete violated contract, dependency, baseline, schema, ownership, capability, or environment condition when evidence is available.
+
+Repeated failure mechanisms must be correlated with prior session failures and prevention assets. Deterministic recurring checks should be promoted into existing canonical validators/precommit gates instead of creating parallel ad-hoc checks. Historical failed/superseded candidates remain provenance and MUST NOT be treated as PASS evidence.
+
+The continuation evidence should record, when applicable: session/workstream identifiers, failing PR/commit/workflow/job, concrete failure signature, root-cause status, corrective owner, latest corrective commit/PR, regression status, and whether the failure is safe to close.
+
 ## Target-File Git Status Preflight Invariant
 
 Before editing any implementation/design file, every session MUST inspect the Git state of the exact target files/directories it intends to touch.
@@ -90,6 +104,7 @@ Each substantive workstream should record at minimum:
 
 - `baselineMainSha`
 - latest-main check time or evidence reference
+- session/workstream error-preflight evidence and unresolved failure status
 - target-file Git status / revision evidence
 - intervening commit assessment
 - open PR / active workstream overlap assessment
@@ -104,6 +119,7 @@ Each substantive workstream should record at minimum:
 
 ## Canonical Invariants Added
 
+- No continuation before current session/workstream Git failures are inspected and classified.
 - No work from an unchecked stale Git baseline.
 - No target-file mutation before exact Git target status/revision inspection.
 - No duplicate implementation when a newer main commit or active canonical workstream already owns the capability.
@@ -119,7 +135,7 @@ Each substantive workstream should record at minimum:
 
 ## Mandatory Cross-Session Work Loop
 
-`SYNC MAIN -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
+`SYNC MAIN -> INSPECT THIS SESSION/WORKSTREAM ERRORS -> INSPECT TARGET FILE GIT STATUS -> INSPECT RECENT COMMITS/PRS/WORKSTREAMS -> READ REGISTRIES -> CLASSIFY REUSE/ADAPT/COMPOSE/HANDOFF/SUPERSEDE/CREATE -> BOUND WRITE SET -> IMPLEMENT MINIMAL CHANGE -> REFRESH LATEST REMOTE MAIN + TARGET FILES -> RECONCILE -> VERIFY EXACT HEAD -> WRITE/COMMIT -> VERIFY RESULT -> PROMOTE OR FAIL CLOSED`
 
 This loop is mandatory at the start of every continuation/wakeup cycle, not only at the beginning of a conversation.
 

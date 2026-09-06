@@ -3,7 +3,7 @@
   "sessionClass": "security-release",
   "state": "CANDIDATE",
   "branch": "release/r1.18-tenant-isolation-v3-20260906",
-  "baselineMainSha": "f65d9fccdd4aeefefa2537868ec9ffb309b0272a",
+  "baselineMainSha": "6fd4e310a328ad4359e32af585cf005ddf9661cd",
   "ownerResponsibility": "storage-runtime",
   "capabilityIds": ["data.tenant-isolation"],
   "touchPaths": [
@@ -21,7 +21,8 @@
     "tenantIsolationTest": "NEW_PATH",
     "liveStorageWorkflow": "CHANGED_BY_THIS_CANDIDATE",
     "recoveryWorkflow": "CHANGED_BY_THIS_CANDIDATE",
-    "tenantIsolationWorkflow": "NEW_PATH"
+    "tenantIsolationWorkflow": "NEW_PATH",
+    "latestMainDelta": "AGENTS_MD_ONLY_NO_TARGET_PATH_OVERLAP"
   },
   "constraints": [
     "No API authentication or RBAC ownership change",
@@ -30,7 +31,9 @@
     "Tenant context absence must expose zero tenant rows for non-bypass runtime roles",
     "Cross-tenant writes must be denied by PostgreSQL RLS",
     "Existing legacy tests retain legacy tenant compatibility through migration defaults",
-    "CI PostgreSQL server and client major versions must remain compatible"
+    "CI PostgreSQL server and client major versions must remain compatible",
+    "Every continuation must classify same-workstream Git failures before unrelated work",
+    "Every commit must refresh latest main and exact target-file status immediately before creation"
   ],
-  "rollbackPoint": "main@f65d9fccdd4aeefefa2537868ec9ffb309b0272a"
+  "rollbackPoint": "main@6fd4e310a328ad4359e32af585cf005ddf9661cd"
 }
