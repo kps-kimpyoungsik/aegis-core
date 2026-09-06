@@ -1,0 +1,17 @@
+{
+  "id": "WS-20260906-PRECOMMIT-ANTI-DUPLICATION",
+  "sessionClass": "governance-ci",
+  "state": "CANDIDATE",
+  "branch": "governance/precommit-duplicate-guard-20260906",
+  "baselineMainSha": "0f03fb3b1c8615d8f448b9811f6ca92971540e38",
+  "ownerResponsibility": "responsibility",
+  "capabilityIds": ["governance.session-collision-control"],
+  "touchPaths": ["scripts/precommit-verify.sh"],
+  "decision": "REUSE_EXISTING_OWNERSHIP_WORKSTREAM_DUPLICATE_CHECKS",
+  "constraints": [
+    "No parallel duplicate-check implementation",
+    "No new owner for collision control",
+    "Run canonical ownership, workstream collision, and public-symbol duplicate checks for every substantive precommit gate execution"
+  ],
+  "rollbackPoint": "main@0f03fb3b1c8615d8f448b9811f6ca92971540e38"
+}
