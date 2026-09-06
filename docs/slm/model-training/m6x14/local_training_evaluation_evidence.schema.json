@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AEGIS M6.x-14 Local Training Evaluation Evidence",
+  "type": "object",
+  "required": [
+    "evaluation_evidence_id",
+    "training_run_ref",
+    "checkpoint_ref",
+    "preflight_state",
+    "checkpoint_integrity",
+    "regression_state",
+    "forgetting_state",
+    "false_pass_rate",
+    "observed_learning_utility",
+    "recommendation",
+    "state"
+  ],
+  "properties": {
+    "recommendation": {
+      "enum": [
+        "RECOMMEND_PROMOTION",
+        "HOLD_REVALIDATION",
+        "BLOCK_CHECKPOINT_INTEGRITY",
+        "BLOCK_REGRESSION",
+        "BLOCK_FORGETTING",
+        "BLOCK_FALSE_PASS"
+      ]
+    },
+    "state": {"const": "SEALED_NOT_PROMOTED"}
+  },
+  "additionalProperties": true
+}

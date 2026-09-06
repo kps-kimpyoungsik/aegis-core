@@ -1,0 +1,32 @@
+{
+  "policy_revision": "M6X14-P1",
+  "preflight": {
+    "min_free_disk_gb": 20,
+    "warn_vram_headroom_ratio": 0.10
+  },
+  "training_health": {
+    "max_nan_inf_events": 0,
+    "max_repeated_oom": 1,
+    "max_no_progress_windows": 3
+  },
+  "regression": {
+    "material_drop": 0.03,
+    "critical_drop": 0.05
+  },
+  "forgetting": {
+    "retained_ratio": 0.98,
+    "mild_ratio": 0.95,
+    "material_ratio": 0.90
+  },
+  "false_pass": {
+    "critical_max_rate": 0.02
+  },
+  "promotion": {
+    "require_checkpoint_integrity": true,
+    "require_no_critical_regression": true,
+    "require_no_critical_forgetting": true,
+    "require_false_pass_below_threshold": true
+  },
+  "protected_eval_raw_access": false,
+  "auto_promotion": false
+}

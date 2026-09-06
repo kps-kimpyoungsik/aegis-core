@@ -8,10 +8,11 @@ This area stores SLM-specific design, contracts, validation evidence, and sessio
 - `common/` — shared invariants, contracts, lineage, ownership boundaries
 - `learning-data/m6x12/` — immutable dataset snapshot and split assignment
 - `model-training/m6x13/` — local fine-tuning and dynamic learning material optimization
+- `model-training/m6x14/` — local training execution, checkpoint integrity, regression/forgetting/false-pass evaluation, observed learning utility
 - `verification/` — collision and gate evidence
 
 ## Canonical boundary
-`docs/slm` is design/evidence only. Runtime code promotion requires a separate owner-resolved implementation gate.
+`docs/slm` is design/evidence plus executable reference code only. Production runtime ownership remains in the canonical owner modules. SLM orchestration must HANDOFF resource control, recovery, rollback and trace/audit to `runtime-kernel` rather than duplicate them.
 
 ## Learning lineage
-`Local SLM / Online LLM / Knowledge / Asset / Experience → CLO → Golden → Dataset Snapshot → Training Run → Evaluation → Regression/Forgetting → Promotion Governance`.
+`Local SLM / Online LLM / Knowledge / Asset / Experience → CLO → Golden → Dataset Snapshot → Training Run → Checkpoint → Evaluation → Regression/Forgetting/False-PASS → Promotion Governance`.
