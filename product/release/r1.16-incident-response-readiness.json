@@ -1,0 +1,28 @@
+{
+  "releaseId": "aegis-r1.16-incident-response-readiness",
+  "gate": "PUBLIC_OPEN_INCIDENT_RESPONSE_READINESS",
+  "boundaryValidation": "CANDIDATE",
+  "decision": "INCIDENT_RESPONSE_NOT_READY",
+  "canonicalOwner": "@aegis/release-convergence",
+  "protectedProductionAuthority": false,
+  "implemented": [
+    "deterministic incident-response evidence validator",
+    "runbook ownership requirement",
+    "severity and escalation evidence requirement",
+    "communications and rollback runbook requirement",
+    "forensic evidence retention reference requirement",
+    "exercise evidence requirement",
+    "postmortem process verification requirement"
+  ],
+  "notExecuted": [
+    "production incident drill",
+    "real on-call escalation exercise",
+    "real customer communication exercise",
+    "real production rollback during incident",
+    "external incident-response audit",
+    "production monitoring/alerting qualification",
+    "Public Open approval"
+  ],
+  "promotionPolicy": "Validator PASS alone does not qualify incidentResponseReadiness. Real externally evidenced exercise and operational ownership remain required.",
+  "rollbackPoint": "main@169010f71e163e0fee739281c15a03ffc937eef9"
+}
