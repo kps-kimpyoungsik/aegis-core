@@ -1,7 +1,7 @@
 {
   "id": "WS-20260906-RELEASE-PREFLIGHT-METADATA-OWNERSHIP-CURRENT",
   "sessionClass": "release-evolution",
-  "state": "ACTIVE_CANDIDATE",
+  "state": "INTEGRATED",
   "branch": "release/preflight-metadata-ownership-fix-current-20260906",
   "baselineMainSha": "d8275289a384b58d103681813c69b0c427fbdef0",
   "ownerResponsibility": "release-convergence",
@@ -23,6 +23,15 @@
     "r118Workstream": "UPSTREAM_CANONICAL_METADATA_HOTFIXED"
   },
   "preCommitMainSha": "d8275289a384b58d103681813c69b0c427fbdef0",
+  "verification": {
+    "prePromotionExactHead": "f3795a3c7c6b6f0d3d199ca6d3c69720f26cdb3d",
+    "triggeredWorkflows": 11,
+    "successfulWorkflows": 11,
+    "evolutionPreflightRun": 34012763309,
+    "productConvergenceRun": 34012763164,
+    "manifestBaselineMode": "not-applicable",
+    "deterministicTests": "105/105 PASS"
+  },
   "constraints": [
     "Manifest baseline is enforced only when the canonical manifest is actually mutated",
     "Release-number collision checks remain global and fail closed",
