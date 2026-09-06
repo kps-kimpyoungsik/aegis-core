@@ -17,26 +17,31 @@ function run(...args) {
   return JSON.parse(result.stdout);
 }
 
-test('discovers CI fan-out handoff without issue number', () => {
+test('discovers CI fan-out handoff without issue number and does not invent an executor', () => {
   const result = run('--query=workflow-fanout');
   assert.equal(result.matchCount, 1);
   assert.equal(result.fallbackRequired, false);
   assert.equal(result.items[0].id, 'AEGIS-HANDOFF-CI-FANOUT-001');
   assert.equal(result.items[0].issueRef, 109);
+  assert.equal(result.items[0].ownerResponsibility, 'release-convergence');
+  assert.equal(result.items[0].activeExecutor, 'UNCONFIRMED');
+  assert.equal(result.items[0].claimState, 'UNCLAIMED');
 });
 
 test('discovers GitHub Actions billing blocker by structural fingerprint', () => {
   const result = run('--fingerprint=billing-lock');
   assert.equal(result.matchCount, 1);
   assert.equal(result.items[0].state, 'BLOCKED_EXTERNAL');
+  assert.equal(result.items[0].claimState, 'BLOCKED_EXTERNAL');
   assert.equal(result.items[0].rootCauseStatus, 'CONFIRMED');
   assert.match(result.items[0].retryPolicy, /SUPPRESS_UNTIL_EXTERNAL_STATE_CHANGES/);
 });
 
-test('discovers data-plane work by canonical domain', () => {
+test('discovers data-plane work by canonical domain while executor remains unconfirmed', () => {
   const result = run('--domain=data-plane');
   assert.equal(result.matchCount, 1);
   assert.equal(result.items[0].ownerResponsibility, 'storage-runtime');
+  assert.equal(result.items[0].activeExecutor, 'UNCONFIRMED');
   assert.equal(result.items[0].issueRef, 110);
 });
 
@@ -52,4 +57,19 @@ test('governance owner lookup returns unresolved governance work', () => {
   assert.ok(result.matchCount >= 2);
   assert.ok(result.items.some((item) => item.state === 'REHANDOFF_REQUIRED'));
   assert.ok(result.items.some((item) => item.id === 'AEGIS-HANDOFF-COMPLETION-AUDIT-001'));
+});
+
+test('completion audit work has one explicit active workstream claim', () => {
+  const result = run('--executor=governance/session-policy-latest-main-sync-20260906');
+  assert.equal(result.matchCount, 1);
+  assert.equal(result.items[0].id, 'AEGIS-HANDOFF-COMPLETION-AUDIT-001');
+  assert.equal(result.items[0].activeExecutorType, 'WORKSTREAM');
+  assert.equal(result.items[0].claimState, 'VALIDATING');
+  assert.equal(result.items[0].activePrRef, 121);
+});
+
+test('unclaimed lookup surfaces work that must not be duplicated', () => {
+  const result = run('--claim-state=UNCLAIMED');
+  assert.ok(result.items.some((item) => item.id === 'AEGIS-HANDOFF-CI-FANOUT-001'));
+  assert.ok(result.items.every((item) => item.activeExecutor === 'UNCONFIRMED'));
 });
