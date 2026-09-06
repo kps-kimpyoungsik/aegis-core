@@ -1,0 +1,33 @@
+{
+  "id": "WS-20260906-RELEASE-PREFLIGHT-METADATA-OWNERSHIP-CURRENT",
+  "sessionClass": "release-evolution",
+  "state": "ACTIVE_CANDIDATE",
+  "branch": "release/preflight-metadata-ownership-fix-current-20260906",
+  "baselineMainSha": "d8275289a384b58d103681813c69b0c427fbdef0",
+  "ownerResponsibility": "release-convergence",
+  "capabilityIds": ["release.manifest-baseline-serialization"],
+  "touchPaths": [
+    "product/tools/release-evolution-preflight.mjs",
+    "product/tests/release-evolution-preflight.test.mjs",
+    "product/contracts/workstreams/WS-20260906-RELEASE-EVIDENCE-REBASE.json",
+    "product/contracts/workstreams/WS-20260906-RELEASE-EVIDENCE-REBASE-1155.json",
+    "product/contracts/workstreams/WS-20260906-RELEASE-PREFLIGHT-METADATA-OWNERSHIP-CURRENT.json"
+  ],
+  "decision": "REUSE_PR87_ADAPT_CURRENT_MAIN_COMPOSE_STALE_WORKSTREAM_CLEANUP",
+  "targetFileGitStatus": {
+    "releaseEvolutionPreflight": "UNCHANGED",
+    "releaseEvolutionPreflightTest": "UNCHANGED",
+    "legacyReleaseWorkstream72": "STALE_STATE_FROM_MERGED_PR",
+    "legacyReleaseWorkstream80": "STALE_STATE_FROM_MERGED_PR",
+    "releaseManifest": "READ_ONLY_NOT_MUTATED",
+    "r118Workstream": "UPSTREAM_CANONICAL_METADATA_HOTFIXED"
+  },
+  "preCommitMainSha": "d8275289a384b58d103681813c69b0c427fbdef0",
+  "constraints": [
+    "Manifest baseline is enforced only when the canonical manifest is actually mutated",
+    "Release-number collision checks remain global and fail closed",
+    "No validation state is widened",
+    "No runtime, Data Plane, API security, React, authority, verifier, signature, or production-permission ownership changes"
+  ],
+  "rollbackPoint": "main@d8275289a384b58d103681813c69b0c427fbdef0"
+}
