@@ -1,0 +1,10 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color-scheme: dark; background:#0b1020; color:#edf2ff; }
+* { box-sizing:border-box; }
+body { margin:0; min-width:320px; min-height:100vh; }
+.shell { max-width:1180px; margin:0 auto; padding:48px 24px; }
+.eyebrow { text-transform:uppercase; letter-spacing:.16em; opacity:.7; }
+h1 { font-size:clamp(2rem,5vw,4.6rem); margin:.2em 0 .8em; max-width:12ch; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+article,.timeline { background:#121a31; border:1px solid #263252; border-radius:18px; padding:22px; }
+article strong { font-size:1.4rem; }
+.timeline { margin-top:16px; }

@@ -1,0 +1,36 @@
+{
+  "product": "AEGIS-CLI",
+  "release_candidate": "0.3.0-rc3",
+  "reviewed_at": "2026-09-05T19:27:00+09:00",
+  "decision": "NO_GO",
+  "blockers": 10,
+  "verified": [
+    "JAVA_LINT_ARCHITECTURE",
+    "CONTRACT_SMOKE",
+    "RUNTIME_KERNEL",
+    "POSTGRES_STATIC_CONTRACT",
+    "PUBLIC_API_KEY_AUTH_BOUNDARY",
+    "PUBLIC_MODE_FAIL_CLOSED",
+    "TENANT_CONTEXT_REQUIRED",
+    "SECURITY_RESPONSE_HEADERS",
+    "KUBERNETES_STATIC_SECURITY_BASELINE",
+    "JAR_PACKAGING"
+  ],
+  "open_blockers": [
+    "WEB_PACKAGE_LOCK_AND_PRODUCTION_BUILD",
+    "POSTGRES_RUNTIME_E2E",
+    "BACKUP_RESTORE_DRILL",
+    "OCI_IMAGE_BUILD_SCAN",
+    "KUBERNETES_STAGING_ACCEPTANCE_ROLLBACK",
+    "FULL_SECURITY_RELEASE_CORPUS",
+    "CUSTOMER_IDENTITY_PROVIDER_OIDC_RBAC",
+    "SBOM_PROVENANCE_ATTESTATION"
+  ],
+  "evidence": {
+    "readiness_output_sha256": "ae5978a50af2c5d5b6efb3fea08f81c4561b0ffd84f5fa200478eeec2b3755bc",
+    "auth_boundary_evidence_sha256": "96aed799288f8628a0e58b699141621e38e01474d1a8e004f3f10b0903a34048",
+    "server_jar_sha256": "cfc6fa412e0db5419eeea1681ca6bcaf0fe20cc0c1f5cbf00df54b54cc6a6875",
+    "cli_jar_sha256": "264e37090e16e537dfe9fcc37c931bd9f66d1fdbf9c7d191d97b5efcfeb5a21a",
+    "migration_v001_sha256": "1a82e561ffc6252f9649fcb8289b4d4fc656fb53376e6aae064b1f117accbba8"
+  }
+}

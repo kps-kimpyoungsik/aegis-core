@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: aegis-server}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: aegis-server}}
+  template:
+    metadata: {labels: {app: aegis-server}}
+    spec:
+      containers:
+        - name: server
+          image: aegis-server@sha256:REPLACE_AT_RELEASE
+          ports: [{containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /readiness, port: 8080}}
+          livenessProbe: {httpGet: {path: /liveness, port: 8080}}
+          securityContext: {allowPrivilegeEscalation: false, runAsNonRoot: true, readOnlyRootFilesystem: true}
