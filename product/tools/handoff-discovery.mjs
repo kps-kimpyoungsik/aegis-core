@@ -16,22 +16,15 @@ const ownerIds = new Set(owners.responsibilities.map((item) => item.id));
 const capabilityIds = new Set(capabilities.capabilities.map((item) => item.id));
 
 const allowedStates = new Set([
-  'HANDOFF_CREATED',
-  'ACKNOWLEDGED',
-  'IN_PROGRESS',
-  'VALIDATING',
-  'COMPLETED',
-  'BLOCKED_EXTERNAL',
-  'BLOCKED_DEPENDENCY',
-  'FAILED_VALIDATION',
-  'RETRY_DUE',
-  'REHANDOFF_REQUIRED',
-  'ESCALATION_REQUIRED',
-  'STALE',
-  'PAUSED',
-  'ROLLBACK',
-  'FAILED'
+  'HANDOFF_CREATED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'VALIDATING', 'COMPLETED',
+  'BLOCKED_EXTERNAL', 'BLOCKED_DEPENDENCY', 'FAILED_VALIDATION', 'RETRY_DUE',
+  'REHANDOFF_REQUIRED', 'ESCALATION_REQUIRED', 'STALE', 'PAUSED', 'ROLLBACK', 'FAILED'
 ]);
+const allowedClaimStates = new Set([
+  'UNCLAIMED', 'CLAIMED', 'IN_PROGRESS', 'VALIDATING', 'BLOCKED_EXTERNAL',
+  'BLOCKED_DEPENDENCY', 'REHANDOFF_REQUIRED', 'COMPLETED_VERIFIED'
+]);
+const allowedExecutorTypes = new Set(['UNCONFIRMED', 'SESSION', 'AUTOMATION', 'HUMAN', 'WORKSTREAM']);
 
 const ids = new Set();
 const fingerprints = new Set();
@@ -49,6 +42,18 @@ for (const item of registry.items) {
   }
   if (!Array.isArray(item.blockedBy)) throw new Error(`AEGIS-HANDOFF-008 BLOCKED_BY_NOT_ARRAY ${item.id}`);
   if (!item.nextAction || !item.retryPolicy || !item.rootCauseStatus) throw new Error(`AEGIS-HANDOFF-009 INCOMPLETE_AUDIT_CONTRACT ${item.id}`);
+
+  const claim = item.executionClaim;
+  if (!claim || typeof claim !== 'object') throw new Error(`AEGIS-HANDOFF-012 MISSING_EXECUTION_CLAIM ${item.id}`);
+  if (!allowedClaimStates.has(claim.claimState)) throw new Error(`AEGIS-HANDOFF-013 UNKNOWN_CLAIM_STATE ${item.id}:${claim.claimState}`);
+  if (!allowedExecutorTypes.has(claim.activeExecutorType)) throw new Error(`AEGIS-HANDOFF-014 UNKNOWN_EXECUTOR_TYPE ${item.id}:${claim.activeExecutorType}`);
+  if (!claim.activeExecutorId || typeof claim.activeExecutorId !== 'string') throw new Error(`AEGIS-HANDOFF-015 MISSING_EXECUTOR_ID ${item.id}`);
+  if (!claim.claimEvidence || typeof claim.claimEvidence !== 'string') throw new Error(`AEGIS-HANDOFF-016 MISSING_CLAIM_EVIDENCE ${item.id}`);
+  if (!Array.isArray(claim.intendedWriteSet)) throw new Error(`AEGIS-HANDOFF-017 WRITE_SET_NOT_ARRAY ${item.id}`);
+  const executorConfirmed = claim.activeExecutorType !== 'UNCONFIRMED' && claim.activeExecutorId !== 'UNCONFIRMED';
+  if (['CLAIMED', 'IN_PROGRESS', 'VALIDATING'].includes(claim.claimState) && !executorConfirmed) {
+    throw new Error(`AEGIS-HANDOFF-018 ACTIVE_CLAIM_WITHOUT_EXECUTOR ${item.id}`);
+  }
 }
 for (const item of registry.items) {
   for (const blocker of item.blockedBy) {
@@ -67,6 +72,8 @@ const normalize = (value) => String(value ?? '').trim().toLowerCase();
 const query = normalize(options.query);
 const domain = normalize(options.domain);
 const owner = normalize(options.owner);
+const executor = normalize(options.executor);
+const claimState = normalize(options['claim-state']);
 const fingerprint = normalize(options.fingerprint);
 const activeOnly = options.all !== 'true';
 
@@ -75,17 +82,17 @@ const matches = registry.items.filter((item) => {
   if (activeOnly && terminalStates.has(item.state)) return false;
   if (domain && normalize(item.domain) !== domain) return false;
   if (owner && normalize(item.ownerResponsibility) !== owner) return false;
+  if (executor && normalize(item.executionClaim.activeExecutorId) !== executor) return false;
+  if (claimState && normalize(item.executionClaim.claimState) !== claimState) return false;
   if (fingerprint && !normalize(item.failureFingerprint).includes(fingerprint)) return false;
   if (query) {
     const haystack = [
-      item.id,
-      item.failureFingerprint,
-      item.domain,
-      item.ownerResponsibility,
-      item.state,
-      item.nextAction,
-      item.retryPolicy,
-      ...(item.capabilities ?? [])
+      item.id, item.failureFingerprint, item.domain, item.ownerResponsibility, item.state,
+      item.executionClaim.claimState, item.executionClaim.activeExecutorType,
+      item.executionClaim.activeExecutorId, item.executionClaim.activeBranch,
+      item.executionClaim.activePrRef, item.executionClaim.claimEvidence,
+      item.nextAction, item.retryPolicy, ...(item.capabilities ?? []),
+      ...(item.executionClaim.intendedWriteSet ?? [])
     ].map(normalize).join(' ');
     if (!haystack.includes(query)) return false;
   }
@@ -103,6 +110,11 @@ const result = {
     id: item.id,
     domain: item.domain,
     ownerResponsibility: item.ownerResponsibility,
+    activeExecutor: item.executionClaim.activeExecutorId,
+    activeExecutorType: item.executionClaim.activeExecutorType,
+    claimState: item.executionClaim.claimState,
+    activeBranch: item.executionClaim.activeBranch,
+    activePrRef: item.executionClaim.activePrRef,
     failureFingerprint: item.failureFingerprint,
     issueRef: item.issueRef,
     state: item.state,
