@@ -8,6 +8,10 @@ UPDATE aegis_record SET tenant_id = 'legacy' WHERE tenant_id IS NULL;
 UPDATE aegis_outbox SET tenant_id = 'legacy' WHERE tenant_id IS NULL;
 UPDATE aegis_projection SET tenant_id = 'legacy' WHERE tenant_id IS NULL;
 
+ALTER TABLE aegis_record ALTER COLUMN tenant_id SET DEFAULT 'legacy';
+ALTER TABLE aegis_outbox ALTER COLUMN tenant_id SET DEFAULT 'legacy';
+ALTER TABLE aegis_projection ALTER COLUMN tenant_id SET DEFAULT 'legacy';
+
 ALTER TABLE aegis_record ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE aegis_outbox ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE aegis_projection ALTER COLUMN tenant_id SET NOT NULL;
