@@ -52,6 +52,8 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends postgresql-client-18
+          export PATH="/usr/lib/postgresql/18/bin:${PATH}"
+          echo '/usr/lib/postgresql/18/bin' >> "${GITHUB_PATH}"
           psql --version | grep -E ' 18\.'
           pg_dump --version | grep -E ' 18\.'
           pg_restore --version | grep -E ' 18\.'
