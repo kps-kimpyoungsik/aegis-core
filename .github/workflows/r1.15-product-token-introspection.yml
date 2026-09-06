@@ -1,0 +1,66 @@
+name: R1.15 Product Token Introspection
+
+on:
+  pull_request:
+    paths:
+      - 'product/apps/api-server/**'
+      - 'product/tests/token-introspection.test.mjs'
+      - 'product/release/release-manifest.candidate.json'
+      - '.github/workflows/r1.15-product-token-introspection.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  token-introspection:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install locked dependencies
+        working-directory: product
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Token introspection regression
+        working-directory: product
+        run: node --test tests/token-introspection.test.mjs tests/oidc-jwt-authenticator.test.mjs
+      - name: Canonical regression
+        working-directory: product
+        run: |
+          npm run verify:deterministic
+          npm run lint
+          npm run typecheck:release
+          npm run build:web
+      - name: Record evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.15-token-introspection
+          {
+            echo 'R1_15_TOKEN_INTROSPECTION=PASS'
+            echo 'scope=post_signature_active_token_status_fail_closed'
+            echo 'synthetic_active=EXECUTED'
+            echo 'synthetic_revoked=EXECUTED'
+            echo 'subject_mismatch=EXECUTED'
+            echo 'provider_failure=EXECUTED_FAIL_CLOSED'
+            echo 'production_idp_introspection=NOT_EXECUTED'
+            echo 'revocation_event_push=NOT_EXECUTED'
+            echo 'distributed_revocation_cache=NOT_EXECUTED'
+            echo "commit=${GITHUB_SHA}"
+          } > build/r1.15-token-introspection/environment.txt
+          sha256sum product/apps/api-server/index.js product/apps/api-server/oidc-jwt-authenticator.js product/apps/api-server/token-introspection.js product/tests/token-introspection.test.mjs .github/workflows/r1.15-product-token-introspection.yml > build/r1.15-token-introspection/source-sha256.txt
+      - name: Upload evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: aegis-r1.15-token-introspection-evidence
+          path: build/r1.15-token-introspection/**
+          if-no-files-found: error
+          retention-days: 30

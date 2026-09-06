@@ -2,6 +2,7 @@ import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { createTask } from "@aegis/core-domain";
 import { createOidcJwtAuthenticator } from "./oidc-jwt-authenticator.js";
+import { createTokenIntrospectionVerifier } from "./token-introspection.js";
 
 const MAX_JSON_BODY_BYTES = 64 * 1024;
 const MIN_BEARER_TOKEN_BYTES = 32;
@@ -10,220 +11,31 @@ const RUNTIME_VIEWER_ROLE = "RUNTIME_VIEWER";
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
 const DEFAULT_RATE_LIMIT_MAX_KEYS = 10_000;
 
-class ApiInputError extends Error {
-  constructor(status, code) {
-    super(code);
-    this.name = "ApiInputError";
-    this.status = status;
-    this.code = code;
-  }
-}
+class ApiInputError extends Error { constructor(status, code) { super(code); this.name="ApiInputError"; this.status=status; this.code=code; } }
+class ApiAuthorizationError extends Error { constructor(status, code) { super(code); this.name="ApiAuthorizationError"; this.status=status; this.code=code; } }
+class ApiRateLimitError extends Error { constructor(retryAfterSeconds) { super("AEGIS-API-016 RATE_LIMITED"); this.name="ApiRateLimitError"; this.status=429; this.code="AEGIS-API-016 RATE_LIMITED"; this.retryAfterSeconds=retryAfterSeconds; } }
 
-class ApiAuthorizationError extends Error {
-  constructor(status, code) {
-    super(code);
-    this.name = "ApiAuthorizationError";
-    this.status = status;
-    this.code = code;
-  }
-}
+function json(res, status, body, headers = {}) { res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff",...headers}); res.end(JSON.stringify(body)); }
+function isJsonContentType(value) { return typeof value === "string" && value.split(";",1)[0].trim().toLowerCase() === "application/json"; }
+async function readJson(req) { if(!isJsonContentType(req.headers["content-type"])) throw new ApiInputError(415,"AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED"); const declaredLength=Number(req.headers["content-length"]??0); if(Number.isFinite(declaredLength)&&declaredLength>MAX_JSON_BODY_BYTES){req.resume();throw new ApiInputError(413,"AEGIS-API-004 PAYLOAD_TOO_LARGE");} const chunks=[];let receivedBytes=0;for await(const chunk of req){receivedBytes+=chunk.length;if(receivedBytes>MAX_JSON_BODY_BYTES){req.resume();throw new ApiInputError(413,"AEGIS-API-004 PAYLOAD_TOO_LARGE");}chunks.push(chunk);} if(chunks.length===0)return{};try{return JSON.parse(Buffer.concat(chunks,receivedBytes).toString("utf8"));}catch{throw new ApiInputError(400,"AEGIS-API-005 MALFORMED_JSON");} }
+function validatePrincipal(principal){if(!principal||typeof principal!=="object")return null;if(typeof principal.id!=="string"||principal.id.trim().length===0)return null;if(typeof principal.tenantId!=="string"||principal.tenantId.trim().length===0)return null;if(!Array.isArray(principal.roles)||!principal.roles.every((role)=>typeof role==="string"&&role.trim().length>0))return null;return Object.freeze({id:principal.id.trim(),tenantId:principal.tenantId.trim(),roles:Object.freeze([...new Set(principal.roles.map((role)=>role.trim()))])});}
+function parseRoles(value){if(typeof value!=="string")return[];return[...new Set(value.split(",").map((role)=>role.trim()).filter(Boolean))];}
+function parsePositiveInteger(value,fallback,code){if(value===undefined||value===null||value==="")return fallback;const parsed=Number(value);if(!Number.isSafeInteger(parsed)||parsed<=0)throw new Error(code);return parsed;}
 
-class ApiRateLimitError extends Error {
-  constructor(retryAfterSeconds) {
-    super("AEGIS-API-016 RATE_LIMITED");
-    this.name = "ApiRateLimitError";
-    this.status = 429;
-    this.code = "AEGIS-API-016 RATE_LIMITED";
-    this.retryAfterSeconds = retryAfterSeconds;
-  }
-}
+export function createFixedWindowRateLimiter({limit=DEFAULT_RATE_LIMIT_PER_MINUTE,windowMs=60_000,maxKeys=DEFAULT_RATE_LIMIT_MAX_KEYS,now=()=>Date.now()}={}){if(!Number.isSafeInteger(limit)||limit<=0)throw new Error("AEGIS-API-017 INVALID_RATE_LIMIT");if(!Number.isSafeInteger(windowMs)||windowMs<=0)throw new Error("AEGIS-API-018 INVALID_RATE_WINDOW");if(!Number.isSafeInteger(maxKeys)||maxKeys<=0)throw new Error("AEGIS-API-019 INVALID_RATE_KEY_CAPACITY");const buckets=new Map();return async({principal,method,url})=>{const currentWindow=Math.floor(now()/windowMs);const key=`${principal.tenantId}\u0000${principal.id}\u0000${method}\u0000${url}`;let bucket=buckets.get(key);if(!bucket||bucket.window!==currentWindow){if(!bucket&&buckets.size>=maxKeys)return{allowed:false,retryAfterSeconds:Math.max(1,Math.ceil(windowMs/1000))};bucket={window:currentWindow,count:0};buckets.set(key,bucket);}if(bucket.count>=limit){const elapsed=now()%windowMs;return{allowed:false,retryAfterSeconds:Math.max(1,Math.ceil((windowMs-elapsed)/1000))};}bucket.count+=1;return{allowed:true,remaining:limit-bucket.count};};}
+export function createEnvironmentRateLimiter(env=process.env,options={}){return createFixedWindowRateLimiter({limit:parsePositiveInteger(env.AEGIS_API_RATE_LIMIT_PER_MINUTE,DEFAULT_RATE_LIMIT_PER_MINUTE,"AEGIS-API-017 INVALID_RATE_LIMIT"),maxKeys:parsePositiveInteger(env.AEGIS_API_RATE_LIMIT_MAX_KEYS,DEFAULT_RATE_LIMIT_MAX_KEYS,"AEGIS-API-019 INVALID_RATE_KEY_CAPACITY"),windowMs:60_000,now:options.now});}
 
-function json(res, status, body, headers = {}) {
-  res.writeHead(status, {
-    "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "x-content-type-options": "nosniff",
-    ...headers,
-  });
-  res.end(JSON.stringify(body));
-}
+export function createEnvironmentAuthenticator(env=process.env){const token=env.AEGIS_API_BEARER_TOKEN;if(!token)return async()=>null;const tokenBytes=Buffer.from(token,"utf8");if(tokenBytes.length<MIN_BEARER_TOKEN_BYTES)throw new Error("AEGIS-API-009 BEARER_TOKEN_TOO_SHORT");const principalId=env.AEGIS_API_PRINCIPAL_ID?.trim();if(!principalId)throw new Error("AEGIS-API-010 PRINCIPAL_ID_REQUIRED");const roles=parseRoles(env.AEGIS_API_ROLES);if(roles.length===0)throw new Error("AEGIS-API-011 PRINCIPAL_ROLES_REQUIRED");const tenantId=env.AEGIS_API_TENANT_ID?.trim();if(!tenantId)throw new Error("AEGIS-API-012 TENANT_ID_REQUIRED");const expected=Buffer.from(`Bearer ${token}`,"utf8");const principal=Object.freeze({id:principalId,tenantId,roles:Object.freeze(roles)});return async(req)=>{const authorization=req.headers.authorization;if(typeof authorization!=="string")return null;const supplied=Buffer.from(authorization,"utf8");if(supplied.length!==expected.length||!timingSafeEqual(supplied,expected))return null;return principal;};}
 
-function isJsonContentType(value) {
-  if (typeof value !== "string") return false;
-  return value.split(";", 1)[0].trim().toLowerCase() === "application/json";
-}
+export function createConfiguredAuthenticator(env=process.env,options={}){const oidcIssuer=env.AEGIS_OIDC_ISSUER?.trim();const oidcAudience=env.AEGIS_OIDC_AUDIENCE?.trim();if(oidcIssuer||oidcAudience){if(!oidcIssuer||!oidcAudience)throw new Error("AEGIS-API-015 OIDC_CONFIGURATION_INCOMPLETE");const introspectionEndpoint=env.AEGIS_OIDC_INTROSPECTION_ENDPOINT?.trim();const introspectionClientId=env.AEGIS_OIDC_INTROSPECTION_CLIENT_ID;const introspectionClientSecret=env.AEGIS_OIDC_INTROSPECTION_CLIENT_SECRET;const introspectionConfigured=Boolean(introspectionEndpoint||introspectionClientId||introspectionClientSecret);if(introspectionConfigured&&(!introspectionEndpoint||!introspectionClientId||!introspectionClientSecret))throw new Error("AEGIS-API-021 OIDC_INTROSPECTION_CONFIGURATION_INCOMPLETE");const tokenStatusVerifier=introspectionConfigured?createTokenIntrospectionVerifier({endpoint:introspectionEndpoint,clientId:introspectionClientId,clientSecret:introspectionClientSecret,fetchImpl:options.introspectionFetchImpl??options.fetchImpl,timeoutMs:parsePositiveInteger(env.AEGIS_OIDC_INTROSPECTION_TIMEOUT_MS,2000,"AEGIS-API-022 OIDC_INTROSPECTION_TIMEOUT_INVALID")}):null;return createOidcJwtAuthenticator({issuer:oidcIssuer,audience:oidcAudience,tenantClaim:env.AEGIS_OIDC_TENANT_CLAIM?.trim()||"tenant_id",rolesClaim:env.AEGIS_OIDC_ROLES_CLAIM?.trim()||"roles",fetchImpl:options.fetchImpl,now:options.now,tokenStatusVerifier});}return createEnvironmentAuthenticator(env);}
 
-async function readJson(req) {
-  if (!isJsonContentType(req.headers["content-type"])) throw new ApiInputError(415, "AEGIS-API-003 JSON_CONTENT_TYPE_REQUIRED");
-  const declaredLength = Number(req.headers["content-length"] ?? 0);
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_BODY_BYTES) {
-    req.resume();
-    throw new ApiInputError(413, "AEGIS-API-004 PAYLOAD_TOO_LARGE");
-  }
-  const chunks = [];
-  let receivedBytes = 0;
-  for await (const chunk of req) {
-    receivedBytes += chunk.length;
-    if (receivedBytes > MAX_JSON_BODY_BYTES) {
-      req.resume();
-      throw new ApiInputError(413, "AEGIS-API-004 PAYLOAD_TOO_LARGE");
-    }
-    chunks.push(chunk);
-  }
-  if (chunks.length === 0) return {};
-  try { return JSON.parse(Buffer.concat(chunks, receivedBytes).toString("utf8")); }
-  catch { throw new ApiInputError(400, "AEGIS-API-005 MALFORMED_JSON"); }
-}
+function requireTenantBinding(req,principal){const requestedTenant=req.headers["x-aegis-tenant"];if(typeof requestedTenant!=="string"||requestedTenant.trim().length===0)throw new ApiAuthorizationError(400,"AEGIS-API-013 TENANT_CONTEXT_REQUIRED");if(requestedTenant.trim()!==principal.tenantId)throw new ApiAuthorizationError(403,"AEGIS-API-014 TENANT_MISMATCH");}
+async function requirePrincipal(req,authenticateRequest,allowedRoles){const principal=validatePrincipal(await authenticateRequest(req));if(!principal)throw new ApiAuthorizationError(401,"AEGIS-API-006 AUTHENTICATION_REQUIRED");requireTenantBinding(req,principal);if(!allowedRoles.some((role)=>principal.roles.includes(role)))throw new ApiAuthorizationError(403,"AEGIS-API-007 FORBIDDEN");return principal;}
+async function enforceRateLimit(req,principal,rateLimitRequest){const decision=await rateLimitRequest({principal,method:req.method,url:req.url});if(!decision||decision.allowed!==true)throw new ApiRateLimitError(decision?.retryAfterSeconds??60);}
 
-function validatePrincipal(principal) {
-  if (!principal || typeof principal !== "object") return null;
-  if (typeof principal.id !== "string" || principal.id.trim().length === 0) return null;
-  if (typeof principal.tenantId !== "string" || principal.tenantId.trim().length === 0) return null;
-  if (!Array.isArray(principal.roles) || !principal.roles.every((role) => typeof role === "string" && role.trim().length > 0)) return null;
-  return Object.freeze({ id: principal.id.trim(), tenantId: principal.tenantId.trim(), roles: Object.freeze([...new Set(principal.roles.map((role) => role.trim()))]) });
-}
+export function createApiServer({executeTask,getSnapshot=()=>({tasks:[],events:[]}),idFactory=()=>crypto.randomUUID(),authenticateRequest=async()=>null,rateLimitRequest=async()=>({allowed:true})}={}){if(typeof executeTask!=="function")throw new Error("AEGIS-API-001 EXECUTE_TASK_REQUIRED");if(typeof authenticateRequest!=="function")throw new Error("AEGIS-API-008 AUTHENTICATOR_REQUIRED");if(typeof rateLimitRequest!=="function")throw new Error("AEGIS-API-020 RATE_LIMITER_REQUIRED");return http.createServer(async(req,res)=>{try{if(req.method==="GET"&&req.url==="/health/live")return json(res,200,{status:"HEALTHY"});if(req.method==="GET"&&req.url==="/health/ready")return json(res,200,{status:"READY",contracts:"0.7.0"});if(req.method==="GET"&&req.url==="/v1/runtime/snapshot"){const principal=await requirePrincipal(req,authenticateRequest,[RUNTIME_VIEWER_ROLE,TASK_EXECUTOR_ROLE]);await enforceRateLimit(req,principal,rateLimitRequest);return json(res,200,getSnapshot());}if(req.method==="POST"&&req.url==="/v1/tasks"){const principal=await requirePrincipal(req,authenticateRequest,[TASK_EXECUTOR_ROLE]);await enforceRateLimit(req,principal,rateLimitRequest);const body=await readJson(req);if(!body.goal||!body.owner||!body.responsibility)return json(res,400,{code:"AEGIS-API-002 INVALID_TASK_COMMAND"});const task=createTask({id:body.id??idFactory(),goal:body.goal,owner:body.owner});const result=await executeTask({task,principal,responsibility:body.responsibility,owner:body.owner,retrievalQuery:body.retrievalQuery??{},retrievalPolicy:body.retrievalPolicy??{}});return json(res,result.status==="HANDOFF_REQUIRED"?409:result.status==="FAILED"?422:202,result);}return json(res,404,{code:"AEGIS-API-404 NOT_FOUND"});}catch(error){if(error instanceof ApiInputError)return json(res,error.status,{code:error.code});if(error instanceof ApiAuthorizationError)return json(res,error.status,{code:error.code},error.status===401?{"www-authenticate":"Bearer"}:{});if(error instanceof ApiRateLimitError)return json(res,error.status,{code:error.code},{"retry-after":String(error.retryAfterSeconds)});return json(res,500,{code:"AEGIS-API-500 INTERNAL_ERROR"});}});}
 
-function parseRoles(value) {
-  if (typeof value !== "string") return [];
-  return [...new Set(value.split(",").map((role) => role.trim()).filter(Boolean))];
-}
-
-function parsePositiveInteger(value, fallback, code) {
-  if (value === undefined || value === null || value === "") return fallback;
-  const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(code);
-  return parsed;
-}
-
-export function createFixedWindowRateLimiter({ limit = DEFAULT_RATE_LIMIT_PER_MINUTE, windowMs = 60_000, maxKeys = DEFAULT_RATE_LIMIT_MAX_KEYS, now = () => Date.now() } = {}) {
-  if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error("AEGIS-API-017 INVALID_RATE_LIMIT");
-  if (!Number.isSafeInteger(windowMs) || windowMs <= 0) throw new Error("AEGIS-API-018 INVALID_RATE_WINDOW");
-  if (!Number.isSafeInteger(maxKeys) || maxKeys <= 0) throw new Error("AEGIS-API-019 INVALID_RATE_KEY_CAPACITY");
-  const buckets = new Map();
-  return async ({ principal, method, url }) => {
-    const currentWindow = Math.floor(now() / windowMs);
-    const key = `${principal.tenantId}\u0000${principal.id}\u0000${method}\u0000${url}`;
-    let bucket = buckets.get(key);
-    if (!bucket || bucket.window !== currentWindow) {
-      if (!bucket && buckets.size >= maxKeys) {
-        return { allowed:false, retryAfterSeconds:Math.max(1, Math.ceil(windowMs / 1000)) };
-      }
-      bucket = { window:currentWindow, count:0 };
-      buckets.set(key, bucket);
-    }
-    if (bucket.count >= limit) {
-      const elapsed = now() % windowMs;
-      return { allowed:false, retryAfterSeconds:Math.max(1, Math.ceil((windowMs - elapsed) / 1000)) };
-    }
-    bucket.count += 1;
-    return { allowed:true, remaining:limit - bucket.count };
-  };
-}
-
-export function createEnvironmentRateLimiter(env = process.env, options = {}) {
-  return createFixedWindowRateLimiter({
-    limit: parsePositiveInteger(env.AEGIS_API_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMIT_PER_MINUTE, "AEGIS-API-017 INVALID_RATE_LIMIT"),
-    maxKeys: parsePositiveInteger(env.AEGIS_API_RATE_LIMIT_MAX_KEYS, DEFAULT_RATE_LIMIT_MAX_KEYS, "AEGIS-API-019 INVALID_RATE_KEY_CAPACITY"),
-    windowMs: 60_000,
-    now: options.now,
-  });
-}
-
-export function createEnvironmentAuthenticator(env = process.env) {
-  const token = env.AEGIS_API_BEARER_TOKEN;
-  if (!token) return async () => null;
-  const tokenBytes = Buffer.from(token, "utf8");
-  if (tokenBytes.length < MIN_BEARER_TOKEN_BYTES) throw new Error("AEGIS-API-009 BEARER_TOKEN_TOO_SHORT");
-  const principalId = env.AEGIS_API_PRINCIPAL_ID?.trim();
-  if (!principalId) throw new Error("AEGIS-API-010 PRINCIPAL_ID_REQUIRED");
-  const roles = parseRoles(env.AEGIS_API_ROLES);
-  if (roles.length === 0) throw new Error("AEGIS-API-011 PRINCIPAL_ROLES_REQUIRED");
-  const tenantId = env.AEGIS_API_TENANT_ID?.trim();
-  if (!tenantId) throw new Error("AEGIS-API-012 TENANT_ID_REQUIRED");
-  const expected = Buffer.from(`Bearer ${token}`, "utf8");
-  const principal = Object.freeze({ id: principalId, tenantId, roles: Object.freeze(roles) });
-  return async (req) => {
-    const authorization = req.headers.authorization;
-    if (typeof authorization !== "string") return null;
-    const supplied = Buffer.from(authorization, "utf8");
-    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
-    return principal;
-  };
-}
-
-export function createConfiguredAuthenticator(env = process.env, options = {}) {
-  const oidcIssuer = env.AEGIS_OIDC_ISSUER?.trim();
-  const oidcAudience = env.AEGIS_OIDC_AUDIENCE?.trim();
-  if (oidcIssuer || oidcAudience) {
-    if (!oidcIssuer || !oidcAudience) throw new Error("AEGIS-API-015 OIDC_CONFIGURATION_INCOMPLETE");
-    return createOidcJwtAuthenticator({
-      issuer: oidcIssuer,
-      audience: oidcAudience,
-      tenantClaim: env.AEGIS_OIDC_TENANT_CLAIM?.trim() || "tenant_id",
-      rolesClaim: env.AEGIS_OIDC_ROLES_CLAIM?.trim() || "roles",
-      fetchImpl: options.fetchImpl,
-      now: options.now,
-    });
-  }
-  return createEnvironmentAuthenticator(env);
-}
-
-function requireTenantBinding(req, principal) {
-  const requestedTenant = req.headers["x-aegis-tenant"];
-  if (typeof requestedTenant !== "string" || requestedTenant.trim().length === 0) throw new ApiAuthorizationError(400, "AEGIS-API-013 TENANT_CONTEXT_REQUIRED");
-  if (requestedTenant.trim() !== principal.tenantId) throw new ApiAuthorizationError(403, "AEGIS-API-014 TENANT_MISMATCH");
-}
-
-async function requirePrincipal(req, authenticateRequest, allowedRoles) {
-  const principal = validatePrincipal(await authenticateRequest(req));
-  if (!principal) throw new ApiAuthorizationError(401, "AEGIS-API-006 AUTHENTICATION_REQUIRED");
-  requireTenantBinding(req, principal);
-  if (!allowedRoles.some((role) => principal.roles.includes(role))) throw new ApiAuthorizationError(403, "AEGIS-API-007 FORBIDDEN");
-  return principal;
-}
-
-async function enforceRateLimit(req, principal, rateLimitRequest) {
-  const decision = await rateLimitRequest({ principal, method:req.method, url:req.url });
-  if (!decision || decision.allowed !== true) throw new ApiRateLimitError(decision?.retryAfterSeconds ?? 60);
-}
-
-export function createApiServer({ executeTask, getSnapshot = () => ({ tasks: [], events: [] }), idFactory = () => crypto.randomUUID(), authenticateRequest = async () => null, rateLimitRequest = async () => ({ allowed:true }) } = {}) {
-  if (typeof executeTask !== "function") throw new Error("AEGIS-API-001 EXECUTE_TASK_REQUIRED");
-  if (typeof authenticateRequest !== "function") throw new Error("AEGIS-API-008 AUTHENTICATOR_REQUIRED");
-  if (typeof rateLimitRequest !== "function") throw new Error("AEGIS-API-020 RATE_LIMITER_REQUIRED");
-  return http.createServer(async (req, res) => {
-    try {
-      if (req.method === "GET" && req.url === "/health/live") return json(res, 200, { status: "HEALTHY" });
-      if (req.method === "GET" && req.url === "/health/ready") return json(res, 200, { status: "READY", contracts: "0.7.0" });
-      if (req.method === "GET" && req.url === "/v1/runtime/snapshot") {
-        const principal = await requirePrincipal(req, authenticateRequest, [RUNTIME_VIEWER_ROLE, TASK_EXECUTOR_ROLE]);
-        await enforceRateLimit(req, principal, rateLimitRequest);
-        return json(res, 200, getSnapshot());
-      }
-      if (req.method === "POST" && req.url === "/v1/tasks") {
-        const principal = await requirePrincipal(req, authenticateRequest, [TASK_EXECUTOR_ROLE]);
-        await enforceRateLimit(req, principal, rateLimitRequest);
-        const body = await readJson(req);
-        if (!body.goal || !body.owner || !body.responsibility) return json(res, 400, { code: "AEGIS-API-002 INVALID_TASK_COMMAND" });
-        const task = createTask({ id: body.id ?? idFactory(), goal: body.goal, owner: body.owner });
-        const result = await executeTask({ task, principal, responsibility: body.responsibility, owner: body.owner, retrievalQuery: body.retrievalQuery ?? {}, retrievalPolicy: body.retrievalPolicy ?? {} });
-        return json(res, result.status === "HANDOFF_REQUIRED" ? 409 : result.status === "FAILED" ? 422 : 202, result);
-      }
-      return json(res, 404, { code: "AEGIS-API-404 NOT_FOUND" });
-    } catch (error) {
-      if (error instanceof ApiInputError) return json(res, error.status, { code: error.code });
-      if (error instanceof ApiAuthorizationError) return json(res, error.status, { code: error.code }, error.status === 401 ? { "www-authenticate": "Bearer" } : {});
-      if (error instanceof ApiRateLimitError) return json(res, error.status, { code:error.code }, { "retry-after":String(error.retryAfterSeconds) });
-      return json(res, 500, { code: "AEGIS-API-500 INTERNAL_ERROR" });
-    }
-  });
-}
-
-const defaultServer = createApiServer({
-  executeTask: async ({ task }) => ({ status: "ACCEPTED", task }),
-  authenticateRequest: createConfiguredAuthenticator(),
-  rateLimitRequest: createEnvironmentRateLimiter(),
-});
-const isMainModule = process.argv[1] && new URL(`file://${process.argv[1]}`).href === import.meta.url;
-if (isMainModule) defaultServer.listen(Number(process.env.PORT || 8080));
-export { defaultServer as server };
+const defaultServer=createApiServer({executeTask:async({task})=>({status:"ACCEPTED",task}),authenticateRequest:createConfiguredAuthenticator(),rateLimitRequest:createEnvironmentRateLimiter()});
+const isMainModule=process.argv[1]&&new URL(`file://${process.argv[1]}`).href===import.meta.url;
+if(isMainModule)defaultServer.listen(Number(process.env.PORT||8080));
+export{defaultServer as server};
