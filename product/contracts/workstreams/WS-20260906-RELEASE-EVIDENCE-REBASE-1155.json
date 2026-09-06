@@ -1,0 +1,18 @@
+{
+  "id": "WS-20260906-RELEASE-EVIDENCE-REBASE-1155",
+  "sessionClass": "release-evolution",
+  "state": "CANDIDATE",
+  "ownerResponsibility": "release-convergence",
+  "capabilityIds": ["release.manifest-baseline-serialization"],
+  "touchPaths": [
+    "product/release/release-manifest.candidate.json",
+    "product/contracts/workstreams/WS-20260906-RELEASE-EVIDENCE-REBASE-1155.json"
+  ],
+  "baselineMainSha": "4e72cead7d647ddad5b64ec8bdc69821f2e78e1c",
+  "decision": "ADAPT_EXISTING_FAIL_CLOSED",
+  "constraints": [
+    "No GA promotion implied",
+    "No validation state widened beyond existing evidence",
+    "No runtime, Data Plane, security, React, audit, signature, or key-custody ownership changes"
+  ]
+}
