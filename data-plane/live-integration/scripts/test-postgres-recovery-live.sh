@@ -15,7 +15,7 @@ mkdir -p "${DUMP_DIR}"
 rm -f "${DUMP_FILE}"
 
 scalar() {
-  "${PSQL[@]}" -Atc "SET aegis.tenant_id = 'legacy'; $1" | tr -d '[:space:]'
+  PGOPTIONS="-c aegis.tenant_id=legacy" "${PSQL[@]}" -Atc "$1" | tr -d '[:space:]'
 }
 
 hash_table() {
