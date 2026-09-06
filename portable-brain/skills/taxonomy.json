@@ -1,0 +1,16 @@
+{
+  "version": "0.1.0",
+  "root": "portable-brain/skills",
+  "maxSemanticDepth": 5,
+  "levels": [
+    {"depth": 1, "name": "field", "examples": ["software-engineering", "security", "data", "ai", "product"]},
+    {"depth": 2, "name": "area", "examples": ["operations", "backend", "frontend", "database", "governance"]},
+    {"depth": 3, "name": "relation", "examples": ["failure-analysis", "dependency", "recovery", "integration", "security-boundary"]},
+    {"depth": 4, "name": "module"},
+    {"depth": 5, "name": "unit", "prefixes": ["service-", "resource-", "page-"]}
+  ],
+  "forbiddenBuckets": ["misc", "temp", "new", "other", "unknown"],
+  "rootMetadataExceptions": ["README.md", "taxonomy.json", "INDEX.json"],
+  "overflowPolicy": "MERGE_INTO_L5_METADATA_OR_SPLIT_AS_SIBLING_L5",
+  "creationGate": ["CLASSIFY", "OWNER_RESOLVE", "DEDUPE", "ROUTE", "VALIDATE_PATH", "ATTACH_PROVENANCE", "CREATE"]
+}
