@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "generatedFromMain": "766b471abaa9b4ed33863eaa2c4c5641437517df",
+  "workstreams": [
+    {
+      "id": "WS-20260906-GOV-COLLISION-CONTROL",
+      "sessionClass": "governance",
+      "state": "ACTIVE",
+      "branch": "governance/session-owner-capability-control-v2-20260906",
+      "baseMainSha": "766b471abaa9b4ed33863eaa2c4c5641437517df",
+      "ownerResponsibility": "responsibility",
+      "capabilityIds": ["governance.session-collision-control"],
+      "touchPaths": ["product/contracts/domain-registry.json","product/contracts/capability-registry.json","product/contracts/active-workstream-ledger.json","product/tools/workstream-collision-check.mjs","product/tests/workstream-collision-control.test.mjs","product/package.json","docs/governance/SESSION_OWNERSHIP_CAPABILITY_CONTROL.md"],
+      "decision": "CREATE_MINIMAL"
+    },
+    {
+      "id": "WS-PR65-R1.14-API-RATE-LIMIT",
+      "sessionClass": "security-release",
+      "state": "INTEGRATED",
+      "pr": 65,
+      "branch": "release/r1.14-api-rate-limit-20260906",
+      "baseMainSha": "78bb8db880cdacc95084c742f656bdd8db399dca",
+      "integratedMainSha": "766b471abaa9b4ed33863eaa2c4c5641437517df",
+      "ownerResponsibility": "api-server",
+      "capabilityIds": ["api.rate-limiting"],
+      "touchPaths": ["product/apps/api-server/","product/tests/",".github/workflows/"],
+      "decision": "INTEGRATED_AFTER_REVERIFY"
+    },
+    {
+      "id": "WS-PR35-SLM-DESIGN",
+      "sessionClass": "research-learning",
+      "state": "REFERENCE",
+      "pr": 35,
+      "branch": "feature/slm-local-finetune-20260905",
+      "baseMainSha": "c951fd02bb74785366809b3957cf85fe52f851ba",
+      "ownerResponsibility": null,
+      "capabilityIds": ["research.slm-design"],
+      "touchPaths": ["docs/slm/"],
+      "decision": "REFERENCE_ONLY"
+    },
+    {
+      "id": "WS-PR26-RC3-LEGACY",
+      "sessionClass": "legacy-convergence",
+      "state": "REFERENCE",
+      "pr": 26,
+      "branch": "release/rc3-session-convergence-20260905",
+      "baseMainSha": "10fc5ff76d0b753b2fb7227e01e0c23319cfbacb",
+      "ownerResponsibility": "release-convergence",
+      "capabilityIds": ["legacy.rc3-convergence"],
+      "touchPaths": ["release-candidates/rc3/"],
+      "decision": "DO_NOT_MERGE_AS_IS"
+    },
+    {
+      "id": "WS-PR22-RC6-REFERENCE",
+      "sessionClass": "legacy-integration",
+      "state": "REFERENCE",
+      "pr": 22,
+      "branch": "integration/session-import-20260905-rc6",
+      "baseMainSha": "c015ce2ab9a69a268a73c83d95a3e34da3b82e4f",
+      "ownerResponsibility": "responsibility",
+      "capabilityIds": ["legacy.rc6-semantic-gate"],
+      "touchPaths": ["integration-gate/"],
+      "decision": "REFERENCE_ONLY"
+    }
+  ]
+}
