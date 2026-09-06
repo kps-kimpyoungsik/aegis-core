@@ -1,0 +1,91 @@
+name: R1.18 Data Plane Tenant Isolation
+
+on:
+  pull_request:
+    paths:
+      - 'data-plane/live-integration/sql/002_tenant_isolation.sql'
+      - 'data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh'
+      - 'data-plane/live-integration/scripts/test-postgres-live.sh'
+      - 'data-plane/live-integration/scripts/test-postgres-recovery-live.sh'
+      - '.github/workflows/r1.18-data-plane-tenant-isolation.yml'
+      - 'product/contracts/workstreams/WS-20260906-R1.18-DATA-PLANE-TENANT-ISOLATION.json'
+      - 'product/release/release-manifest.candidate.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tenant-isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: aegis
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: aegis_test_only
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U aegis -d aegis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      AEGIS_POSTGRES_PASSWORD: aegis_test_only
+      PGPASSWORD: aegis_test_only
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: Apply canonical schema and R1.18 migration
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -p 54329 -U aegis -d aegis -v ON_ERROR_STOP=1 -f data-plane/live-integration/sql/001_init.sql
+          psql -h 127.0.0.1 -p 54329 -U aegis -d aegis -v ON_ERROR_STOP=1 -f data-plane/live-integration/sql/002_tenant_isolation.sql
+      - name: Execute tenant isolation gate
+        run: |
+          set -euo pipefail
+          bash data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh | tee /tmp/r1.18-tenant-isolation.txt
+          grep -Fx 'POSTGRES_TENANT_ISOLATION=PASS' /tmp/r1.18-tenant-isolation.txt
+      - name: Execute existing PostgreSQL regression
+        run: |
+          set -euo pipefail
+          bash data-plane/live-integration/scripts/test-postgres-live.sh | tee /tmp/r1.18-postgres-live.txt
+          grep -Fx 'POSTGRES_LIVE_TEST=PASS' /tmp/r1.18-postgres-live.txt
+      - name: Execute recovery regression
+        run: |
+          set -euo pipefail
+          bash data-plane/live-integration/scripts/test-postgres-recovery-live.sh | tee /tmp/r1.18-postgres-recovery.txt
+          grep -Fx 'P4_RECOVERY_LIVE=PASS' /tmp/r1.18-postgres-recovery.txt
+      - name: Record R1.18 evidence
+        run: |
+          set -euo pipefail
+          mkdir -p build/r1.18-tenant-isolation
+          {
+            echo 'R1_18_DATA_PLANE_TENANT_ISOLATION=PASS'
+            echo 'scope=postgresql_rls_non_superuser_cross_tenant_visibility_write_denial_recovery_regression'
+            echo 'production_db_role_qualification=NOT_EXECUTED'
+            echo 'production_database=NOT_EXECUTED'
+            echo "commit=${GITHUB_SHA}"
+          } | tee build/r1.18-tenant-isolation/evidence.txt
+          sha256sum \
+            data-plane/live-integration/sql/002_tenant_isolation.sql \
+            data-plane/live-integration/scripts/test-postgres-tenant-isolation.sh \
+            data-plane/live-integration/scripts/test-postgres-live.sh \
+            data-plane/live-integration/scripts/test-postgres-recovery-live.sh \
+            > build/r1.18-tenant-isolation/source.sha256
+      - name: Upload R1.18 evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: r1.18-data-plane-tenant-isolation
+          path: build/r1.18-tenant-isolation/**
+          if-no-files-found: error
+          retention-days: 30
